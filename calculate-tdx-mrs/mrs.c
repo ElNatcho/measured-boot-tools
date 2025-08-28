@@ -42,6 +42,7 @@
 #include "efi_boot.h"
 #include "secureboot.h"
 #include "mrs.h"
+#include "rtmrms.h"
 
 extern EFI_GUID gEfiImageSecurityDatabaseGuid;
 
@@ -216,6 +217,43 @@ out:
         OPENSSL_free(ev_separator);
 
     return ret;
+}
+
+/**
+ * Calculate RTMR0 Extended Version
+ *
+ *
+ */
+int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file) 
+{
+	int ret = 0;
+
+	rtmrcontext_t context = {
+		.evlog = evlog,
+		.ovmf_file_path = ovmf_file
+	};
+
+	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
+
+	rtmr_measure_tdhob(&context);
+
+	rtmr_measure_cfv(&context);
+
+	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
+	
+	// Measure EFI secure boot variables (4.,5.,6.,7.,8. EV_EFI_VARIABLE_DRIVER_CONFIG)
+
+	// Measure separator (9. EV_SEPARATOR)
+	
+	// Measure ACPI DATA(?) (10.,11.,12. EV_PLATFORM_CONFIG_FLAGS)
+	
+	// Measure PEI(?) HOBs (13. EV_EFI_HANDOFF_TABLES)
+	
+	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
+
+	// Measure SBat Level (??) (28. EV_EFI_VARIABLE_AUTHORITY)	
+
+	return ret;
 }
 
 /**

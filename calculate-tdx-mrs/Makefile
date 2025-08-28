@@ -28,6 +28,7 @@ CSRS := \
 	td_hob.c \
 	mrtd.c \
 	mrs.c \
+	rtmrms.c \
 	../thirdparty/edk2/MeasureBootPeCoff.c \
 	../thirdparty/edk2/SecMain.c \
 	../thirdparty/LzmaCustomDecompressLib/LzmaDecompress.c \
