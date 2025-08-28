@@ -235,9 +235,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file)
 
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
 
-	rtmr_measure_tdhob(&context);
+	rtmr_measure_tdhob(INDEX_RTMR0, &context);
 
-	rtmr_measure_cfv(&context);
+	rtmr_measure_cfv(INDEX_RTMR0, &context);
 
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 	

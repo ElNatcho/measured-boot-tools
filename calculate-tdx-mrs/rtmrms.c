@@ -9,9 +9,8 @@
 #include "td_hob.h"
 #include "rtmrms.h"
 #include "mrtd.h"
-#include "hash.h"
 
-int rtmr_measure_tdhob(rtmrcontext_t *context)
+int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
 {
 	int ret = -1;
 
@@ -30,7 +29,7 @@ int rtmr_measure_tdhob(rtmrcontext_t *context)
 	return -1;
 }
 
-int rtmr_measure_cfv(rtmrcontext_t *context)
+int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context)
 {
 	int ret = -1;
 
@@ -53,9 +52,9 @@ int rtmr_measure_cfv(rtmrcontext_t *context)
 		printf("Failed to measure OVMF\n");
 	}
 
-	evlog_add(context->evlog, INDEX_RTMR0, "Configuration FV", hash_cfv, "Configuration Firmware Volume");
+	evlog_add(context->evlog, mr_index, "Configuration FV", hash_cfv, "Configuration Firmware Volume");
     
-	//hash_extend(EVP_sha384(), mr, hash_cfv, SHA384_DIGEST_LENGTH)
+	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_cfv, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
