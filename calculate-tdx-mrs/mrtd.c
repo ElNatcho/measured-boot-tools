@@ -6,12 +6,14 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
 #include "UefiBaseType.h"
 
+#include "mrtd.h"
 #include "common.h"
 #include "hash.h"
 
@@ -53,22 +55,6 @@ const EFI_GUID OVMF_TABLE_TDX_METADATA_GUID = { 0xe47a6535,
                                                 0x4798,
                                                 { 0x86, 0x5e, 0x46, 0x85, 0xa7, 0xbf, 0x8e,
                                                   0xc2 } };
-
-typedef struct {
-    uint32_t signature;
-    uint32_t length;
-    uint32_t version;
-    uint32_t number_of_section_entry;
-} tdx_metadata_descriptor_t;
-
-typedef struct {
-    uint32_t data_offset;
-    uint32_t raw_data_size;
-    uint64_t memory_address;
-    uint64_t memory_data_size;
-    uint32_t type;
-    uint32_t attributes;
-} tdx_metadata_section_t;
 
 static bool
 is_valid_descriptor(tdx_metadata_descriptor_t *d)
@@ -419,4 +405,43 @@ out:
         free(metadata_buf);
 
     return ret;
+}
+
+int get_ovmf_metadata(tdx_ovmf_metadata_t* ovmf_metadata, uint8_t *raw_image, uint64_t raw_image_size)
+{
+    assert(ovmf_metadata != NULL);
+	assert(ovmf_metadata->sections == NULL);	// prevent memory leaks by ensuring the sections list is empty
+
+	uint64_t metadata_offset = 0;
+    int ret = get_ovmf_metadata_offset(&metadata_offset, raw_image, raw_image_size);
+    if (ret) {
+        printf("failed to get metadata offset\n");
+        return -1;
+    }
+
+	// get_ovmf_metadata_offset determines the offset of the guid in front of the tdx_metadata_descriptor_t structure.
+	// Therefore, skip to the offset and skip the GUID to only copy the tdx_metadata_descriptor_t.
+	tdx_metadata_descriptor_t* raw_descriptor =
+		(tdx_metadata_descriptor_t*)(raw_image + metadata_offset + sizeof(EFI_GUID));
+	memcpy(&ovmf_metadata->descriptor, raw_descriptor, sizeof(tdx_metadata_descriptor_t));
+
+	uint64_t sections_length = ovmf_metadata->descriptor.length - sizeof(tdx_metadata_descriptor_t);
+	if (sections_length % sizeof(tdx_metadata_section_t)) {
+		printf("section list possibly malformed\n");
+		// TODO: maybe abort at this point?
+	}
+
+	ovmf_metadata->sections = malloc(sections_length);
+	if (!ovmf_metadata->sections) {
+		printf("malloc failed\n");
+		return -1;
+	}
+
+	// The tdx_metadata_section_t follow right after tdx_metadata_descriptor_t, thus, skip the descriptor to jump to
+	// the first entry in the sections list.
+	tdx_metadata_section_t* raw_section =
+		(tdx_metadata_section_t*)((uint8_t*)raw_descriptor + sizeof(tdx_metadata_descriptor_t));
+	memcpy(ovmf_metadata->sections, raw_section, sections_length);
+
+	return 0;
 }
