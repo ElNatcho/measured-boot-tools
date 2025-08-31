@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #define MR_LEN 6
 
 // UEFI Spec 2.10 Section 38.4.1:
