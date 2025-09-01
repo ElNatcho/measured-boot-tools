@@ -2,6 +2,11 @@
 
 #pragma once
 
+#include <stdint.h>
+
+#include "ProcessorBind.h"
+#include "UefiBaseType.h"
+
 typedef struct {
     char *event_type;
     CHAR16 *variable_name;
