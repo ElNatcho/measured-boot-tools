@@ -10,6 +10,7 @@
 #include "common.h"
 #include "td_hob.h"
 #include "rtmrms.h"
+#include "hash.h"
 #include "mrtd.h"
 
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
@@ -72,6 +73,28 @@ int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context)
 		   "Configuration Firmware Volume");
     
 	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_cfv, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}
+
+int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context)
+{
+	// Measures the configuration handed over by the QEMU firmware configuration (fw_cfg) device. The configuration
+	// list is constructed in EDK2 in QemuFwCfgCacheInit.c:ConstructCacheFwCfgList and the measured in
+	// QemuFwCfgCacheInit.c:CacheFwCfgInfoWithOptionalMeasurement. However, currently no fw_cfg device is used and
+	// only 0x00 0x00 is measured. Therfore, this should suffice for now.
+	// (see https://www.qemu.org/docs/master/specs/fw_cfg.html)
+	uint8_t fw_cfg_buf[] = { 0x0, 0x0};
+	size_t fw_cfg_size = sizeof(fw_cfg_buf);
+
+	uint8_t hash_fw_cfg[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), hash_fw_cfg, fw_cfg_buf, fw_cfg_size);
+
+	evlog_add(context->evlog, mr_index, "QEMU FW CFG", hash_fw_cfg,
+		   "QEMU Firmware Configuration (fw_cfg) Device. (WARNING: Dummy implementation only"
+		   " capable of measuring a non existent fw_cfg device)");
+
+	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_fw_cfg, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }

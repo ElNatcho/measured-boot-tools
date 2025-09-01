@@ -249,7 +249,7 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 
-
+	rtmr_measure_qemu_fw_cfg(INDEX_RTMR0, &context);
 
 	// Measure EFI secure boot variables (4.,5.,6.,7.,8. EV_EFI_VARIABLE_DRIVER_CONFIG)
 
