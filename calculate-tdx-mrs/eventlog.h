@@ -3,6 +3,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
+
+#include "hash.h"
 
 #define MR_LEN 6
 
@@ -25,11 +28,18 @@ typedef enum { FORMAT_JSON, FORMAT_TEXT } format_t;
 
 typedef struct {
     format_t format;
+
+	char (*compare_digest_list)[SHA384_DIGEST_LENGTH * 2 + 1];	// dynamic array of sha384 hash strings
+	size_t compare_digest_list_count;
+	size_t compare_digest_list_offset;
+
     char *log[MR_LEN];
 } eventlog_t;
 
 int
 evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, const char *desc);
+
+int load_compare_digest_list(eventlog_t *evlog, const char *path);
 
 const char *
 index_to_mr(uint32_t index);

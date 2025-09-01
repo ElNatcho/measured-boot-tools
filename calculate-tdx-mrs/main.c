@@ -44,6 +44,7 @@ print_usage(const char *progname)
     printf("\t-r,  --ramdisk <file>\t\tThe filename of the initramfs\n");
     printf("\t-f,  --format <text|json>\tThe output format, can be either 'json' or 'text'\n");
     printf("\t-e,  --eventlog\t\t\tPrint detailed eventlog\n");
+	printf("\t     --cmpeventlog\t\t\tCompare digests of a existing eventlog to the detailed eventlog (requires -e)\n");
     printf("\t-s,  --summary\t\t\tPrint final MR values\n");
     printf("\t     --verbose\t\t\tPrint verbose debug output\n");
     printf("\t-c,  --config\t\t\tPath to configuration file\n");
@@ -111,7 +112,13 @@ main(int argc, char *argv[])
     size_t len_mr_nums = 0;
     char *mr_str = NULL;
     const char *progname = argv[0];
-    eventlog_t evlog = { .format = FORMAT_TEXT, .log = { 0 } };
+    eventlog_t evlog = {
+		.format = FORMAT_TEXT,
+		.compare_digest_list = NULL,
+		.compare_digest_list_count = 0,
+		.compare_digest_list_offset = 0,
+		.log = { 0 }
+	};
     acpi_files_t acpi_files = {
         .acpi_rsdp = NULL,
         .acpi_rsdp_size = -1,
@@ -285,7 +292,14 @@ main(int argc, char *argv[])
             dump_kernel_path = argv[1];
             argv += 2;
             argc -= 2;
-        } else {
+        } else if (!strcmp(argv[0], "--cmpeventlog")) {
+			if(load_compare_digest_list(&evlog, argv[1])) {
+				printf("Failed to load digests from %s\n", argv[1]);
+				goto out;
+			}
+			argv += 2;
+			argc -= 2;
+		} else {
             printf("Invalid Option %s or argument missing\n", argv[0]);
             print_usage(progname);
             goto out;
@@ -450,6 +464,14 @@ main(int argc, char *argv[])
             printf("%s", evlog.log[mr_nums[i]]);
         }
         printf("\n");
+
+		if (evlog.compare_digest_list_offset <  evlog.compare_digest_list_count) {
+			printf("\x1B[31mRemaining digests in the compare list:\n");
+			for (size_t i = evlog.compare_digest_list_offset; i < evlog.compare_digest_list_count; i++) {
+				printf("[digest:%ld] %s\n", i, evlog.compare_digest_list[i]);
+			}
+			printf("\x1B[37m");
+		}
     }
 
     // Print final MRS if requested
@@ -493,6 +515,9 @@ out:
             free(evlog.log[i]);
         }
     }
+	if (evlog.compare_digest_list) {
+		free(evlog.compare_digest_list);
+	}
     if (acpi_files.acpi_rsdp)
         free(acpi_files.acpi_rsdp);
     if (acpi_files.acpi_tables)

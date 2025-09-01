@@ -6,9 +6,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <assert.h>
 #include <openssl/sha.h>
 
 #include "eventlog.h"
+#include "common.h"
 #include "hash.h"
 
 const char *
@@ -44,6 +47,71 @@ encode_hex(const uint8_t *bin, int length)
     return hex;
 }
 
+int load_compare_digest_list(eventlog_t *evlog, const char *path)
+{
+	int ret = -1;
+
+	char *file_buf = NULL;
+	size_t file_size;
+	ret = read_file((uint8_t**)&file_buf, &file_size, path);
+	if (ret) {
+		printf("Failed to read file: %s\n", path);
+		return -1;
+	}
+
+	// For now, digests are stored as hex ascii strings in a file. One digest is stored per line.
+	char (*digests)[SHA384_DIGEST_LENGTH * 2 + 1] = NULL;
+	size_t digests_count = 0;
+	size_t digest_size = 0;
+	size_t digest_start_i = 0;
+	size_t i = 0;
+	for (i = 0; i < file_size; i++) {
+		if (isxdigit(file_buf[i])) {
+			continue;
+		} else if (file_buf[i] == '\r') {
+			// prevent multiple sequential \r (or in the middle of digests)
+			if (i < file_size && file_buf[i + 1] != '\n') {
+				printf("Unexpected character '%c' at position %ld\n", file_buf[i], i);
+				return -1;
+			}
+			continue;
+		} else if (i > 0 && (file_buf[i] == '\n' || i + 1 == file_size /* entry before EOF without nl */)) {
+			// ignore \r in size calculation 
+			digest_size = (file_buf[i - 1] == '\r' ? i - 1 : i) - digest_start_i;
+			// Currently, only sha384 is used, thus we only expect this hash size (* 2 since we are dealing with
+			// ascii hex and not raw bytes)
+			if (digest_size != SHA384_DIGEST_LENGTH * 2) {
+				printf("Unexpected digest length %ld at position %ld\n", digest_size, digest_start_i);
+				continue;	// recoverable - laod the rest
+			}
+
+			digests = realloc(digests, (digests_count + 1) * sizeof(digests[0]));
+			if (!digests) {
+				printf("realloc failed\n");
+				return -1;
+			}
+
+			memcpy(&digests[digests_count], file_buf + digest_start_i, SHA384_DIGEST_LENGTH * 2);
+			digests[digests_count][SHA384_DIGEST_LENGTH * 2] = '\0'; // terminate the copied hash with \0
+
+			digests_count += 1;
+			digest_start_i = i + 1;
+		} else {
+			printf("Unexpected character '%c' at position %ld\n", file_buf[i], i);
+			return -1;
+		}
+	}
+
+	/*for (size_t i = 0; i < digests_count; i++) {
+		printf("[Digest:%ld] %s\n", i, digests[i]);
+	}*/
+
+	evlog->compare_digest_list = digests;
+	evlog->compare_digest_list_count = digests_count;
+
+	return 0;
+}
+
 int
 evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, const char *desc)
 {
@@ -66,12 +134,44 @@ evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, co
                        "\n},\n",
                        name, index, hashstr, index_to_mr(index), desc);
     } else if (evlog->format == FORMAT_TEXT) {
-        ret = snprintf(s, sizeof(s),
-                       "subtype: %s"
-                       "\n\tindex: %d"
-                       "\n\tsha384: %s"
-                       "\n\tdescription: %s: %s\n",
-                       name, index, hashstr, index_to_mr(index), desc);
+		if (evlog->compare_digest_list) {
+
+			char *cmphashstr;
+			char *matchstr;
+
+			assert(evlog->compare_digest_list_count >= evlog->compare_digest_list_offset);
+
+			if (evlog->compare_digest_list_count == evlog->compare_digest_list_offset) {
+				cmphashstr = "n/a";
+				matchstr = "";
+			} else {
+				cmphashstr = evlog->compare_digest_list[evlog->compare_digest_list_offset];
+
+				// TODO: color mode disable
+				if (strcmp(cmphashstr, hashstr) == 0) {
+					matchstr = "(\x1B[32mMatch\x1B[37m)";
+				} else {
+					matchstr = "(\x1B[31mMismatch\x1B[37m)";
+				}
+
+				evlog->compare_digest_list_offset += 1;
+			}
+
+			ret = snprintf(s, sizeof(s),
+						  "subtype: %s"
+						  "\n\tindex: %d"
+						  "\n\tsha384    : %s"
+						  "\n\tcmp-sha384: %s %s"
+	                      "\n\tdescription: %s: %s\n",
+			              name, index, hashstr, cmphashstr, matchstr, index_to_mr(index), desc);
+		} else {
+		    ret = snprintf(s, sizeof(s),
+						   "subtype: %s"
+					       "\n\tindex: %d"
+				           "\n\tsha384: %s"
+	                       "\n\tdescription: %s: %s\n",
+			               name, index, hashstr, index_to_mr(index), desc);
+		}
     }
     if (!ret) {
         printf("Failed to print eventlog\n");

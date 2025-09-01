@@ -248,7 +248,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	rtmr_measure_cfv(INDEX_RTMR0, &context);
 
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
-	
+
+
+
 	// Measure EFI secure boot variables (4.,5.,6.,7.,8. EV_EFI_VARIABLE_DRIVER_CONFIG)
 
 	rtmr_measure_secure_boot_variables(INDEX_RTMR0, &context);
