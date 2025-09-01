@@ -28,3 +28,4 @@ int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context);

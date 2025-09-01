@@ -256,7 +256,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	rtmr_measure_secure_boot_variables(INDEX_RTMR0, &context);
 
 	// Measure separator (9. EV_SEPARATOR)
-	
+
+	rtmr_measure_separator(INDEX_RTMR0, &context);
+
 	// Measure ACPI DATA(?) (10.,11.,12. EV_PLATFORM_CONFIG_FLAGS)
 	
 	// Measure PEI(?) HOBs (13. EV_EFI_HANDOFF_TABLES)

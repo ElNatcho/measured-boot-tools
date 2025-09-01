@@ -112,3 +112,21 @@ int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context
 									  context->secure_boot_vars.pk_path, context->secure_boot_vars.kek_path,
 									  context->secure_boot_vars.db_path, context->secure_boot_vars.dbx_path);
 }
+
+int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context)
+{
+	// Measures the EV_SEPARATOR type event (see TCG PC Specific Implementation
+	// Specification, Ver. 1.21, Rev. 1.00, Sec. 11.3.1)
+	uint8_t separator_buf[] = { 0x0, 0x0, 0x0, 0x0 };
+	size_t separator_size = sizeof(separator_buf);
+
+	uint8_t hash_separator[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), hash_separator, separator_buf, separator_size);
+
+	evlog_add(context->evlog, mr_index, "Separator", hash_separator,
+		   "EV_SEPARATOR type event");
+
+	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_separator, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}
