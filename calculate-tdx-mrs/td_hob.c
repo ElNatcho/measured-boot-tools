@@ -160,6 +160,8 @@ tdx_add_ram_entry(TdxRamEntry** ram_entries, size_t* nr_ram_entries, uint64_t ad
 	(*ram_entries)[*nr_ram_entries].length = length;
 	(*ram_entries)[*nr_ram_entries].type = type;
 	*nr_ram_entries = *nr_ram_entries + 1;
+
+	return 0;
 }
 
 static int
@@ -207,7 +209,7 @@ create_td_hob_from_ovmf(uint8_t** dest, size_t* dest_len, uint8_t* raw_ovmf_imag
 	}
 
 	// Add specific ovmf sections to the ram entries array
-	size_t td_hob_index = -1;
+	ssize_t td_hob_index = -1;
 	for (size_t i = 0; i < ovmf_metadata.descriptor.number_of_section_entry; i++) {
 		/*printf("[%ld] data_offset=%08x raw_data_size=%08x memory_address=%016lx length=%016lx type=%08x attribute=%08x\n", i,
 					ovmf_metadata.sections[i].data_offset,
