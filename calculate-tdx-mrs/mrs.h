@@ -17,7 +17,8 @@ calculate_rtmr0(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file,
                 const char *secure_boot, const char *pk, const char *kek, const char *db, const char *dbx);
 
 int
-calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file);
+calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file,
+					const char *secure_boot, const char *pk, const char *kek, const char *db, const char *dbx);
 
 int
 calculate_rtmr1(uint8_t *mr, eventlog_t *evlog, const char *kernel_file, const char *config_file,

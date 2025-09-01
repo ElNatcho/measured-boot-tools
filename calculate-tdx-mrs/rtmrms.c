@@ -6,6 +6,7 @@
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
+#include "secureboot.h"
 #include "common.h"
 #include "td_hob.h"
 #include "rtmrms.h"
@@ -73,4 +74,18 @@ int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context)
 	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_cfv, SHA384_DIGEST_LENGTH);
 
 	return 0;
+}
+
+int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context)
+{
+	// TODO: In general, secure boot variables are stored in the NVRAM. Potentially determine secure
+	// boot variables automagically by parsing the NVRAM emulated by Qemu.
+	//
+	// However, to the best of our knowledge, qemu currently cannot emulate NVRAM, that is usable by
+	// EDK2. Thus, falling back on the default values / allowing the user to specify custom values
+	// should be sufficient at this point in time.
+	return measure_secure_boot_variables(EVP_sha384(), context->mrs[mr_index], mr_index, 
+									  context->evlog, context->secure_boot_vars.secure_boot_path,
+									  context->secure_boot_vars.pk_path, context->secure_boot_vars.kek_path,
+									  context->secure_boot_vars.db_path, context->secure_boot_vars.dbx_path);
 }

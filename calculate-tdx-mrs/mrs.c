@@ -224,13 +224,21 @@ out:
  *
  *
  */
-int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file) 
+int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path,
+						const char *secure_boot_path, const char *pk_path, const char *kek_path, const char *db_path, const char *dbx_path) 
 {
 	int ret = 0;
 
 	rtmrcontext_t context = {
-		.evlog = evlog,
-		.ovmf_file_path = ovmf_file
+		.evlog			  = evlog,
+		.ovmf_file_path	  = ovmf_file_path,
+		.secure_boot_vars = {
+			.secure_boot_path = secure_boot_path,
+			.pk_path		  = pk_path,
+			.kek_path		  = kek_path,
+			.db_path		  = db_path,
+			.dbx_path		  = dbx_path
+		}
 	};
 
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
@@ -242,6 +250,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file)
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 	
 	// Measure EFI secure boot variables (4.,5.,6.,7.,8. EV_EFI_VARIABLE_DRIVER_CONFIG)
+
+	rtmr_measure_secure_boot_variables(INDEX_RTMR0, &context);
 
 	// Measure separator (9. EV_SEPARATOR)
 	

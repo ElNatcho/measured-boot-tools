@@ -402,7 +402,8 @@ main(int argc, char *argv[])
 		//if (calculate_rtmr0(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files, ovmf_version,
         //                    boot_order, len_boot_order, bootxxxx, num_bootxxxx,
         //                    secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
-		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf)) {
+		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf,
+								secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
             printf("Failed to calculate event log for RTMR 0\n");
             goto out;
 		}
