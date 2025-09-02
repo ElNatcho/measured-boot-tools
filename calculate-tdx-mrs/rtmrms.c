@@ -130,3 +130,10 @@ int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context)
 
 	return 0;
 }
+
+int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context) 
+{
+	// Process QemuFwCfgAcpi.c:InstallQemuFwCfgTables
+
+	// Process QemuFwCfgAcpi.c: ProcessCmdAllocate
+}
