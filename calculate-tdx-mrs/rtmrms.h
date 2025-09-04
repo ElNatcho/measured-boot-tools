@@ -2,6 +2,7 @@
 
 #include "eventlog.h"
 #include "hash.h"
+#include "acpi.h"
 
 #pragma once
 
@@ -22,6 +23,8 @@ typedef struct {
 
 	secureboot_variables_t secure_boot_vars;
 
+	acpi_files_t acpi;
+
 } rtmrcontext_t;
 
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context);
@@ -30,3 +33,6 @@ int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context);

@@ -224,7 +224,7 @@ out:
  *
  *
  */
-int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path,
+int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path, acpi_files_t *acpi_files,
 						const char *secure_boot_path, const char *pk_path, const char *kek_path, const char *db_path, const char *dbx_path) 
 {
 	int ret = 0;
@@ -238,7 +238,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 			.kek_path		  = kek_path,
 			.db_path		  = db_path,
 			.dbx_path		  = dbx_path
-		}
+		},
+		.acpi = *acpi_files,
 	};
 
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
@@ -260,9 +261,17 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	rtmr_measure_separator(INDEX_RTMR0, &context);
 
 	// Measure ACPI DATA(?) (10.,11.,12. EV_PLATFORM_CONFIG_FLAGS)
-	
-	// Measure PEI(?) HOBs (13. EV_EFI_HANDOFF_TABLES)
-	
+	// TODO: Currently, the acpi tables are generated dynamically by qemu. The API for generation
+	// appears to be only internally available to QEMU. Thus, for now, the tables need to be dumped
+	// manually via the `acpidump` utility.
+
+	rtmr_measure_acpi_table_loader(INDEX_RTMR0, &context);
+	rtmr_measure_acpi_rsdp(INDEX_RTMR0, &context);
+	rtmr_measure_acpi_tables(INDEX_RTMR0, &context);
+
+	// Measure Smbios Table (13. EV_EFI_HANDOFF_TABLES)
+	// TODO: Same situation as with the ACPI tables. The smbios table can be dumped with `dmidecode`.
+
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 
 	// Measure SBat Level (??) (28. EV_EFI_VARIABLE_AUTHORITY)	

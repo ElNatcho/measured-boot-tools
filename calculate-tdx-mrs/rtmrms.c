@@ -135,5 +135,57 @@ int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context)
 {
 	// Process QemuFwCfgAcpi.c:InstallQemuFwCfgTables
 
-	// Process QemuFwCfgAcpi.c: ProcessCmdAllocate
+	// Process QemuFwCfgAcpi.c:ProcessCmdAllocate
+
+	/* unused for now since there are functions to measure the acpi tables individually */
+
+	return -1;
+}
+
+int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context)
+{
+	if (!context->acpi.table_loader || context->acpi.table_loader_size <= 0) {
+		printf("ACPI table loader not set.\n");
+		return -1;
+	}
+
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, context->acpi.table_loader, context->acpi.table_loader_size);
+	evlog_add(context->evlog, mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
+		   "ACPI etc/table-loader");
+	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}
+
+int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context)
+{
+	if (!context->acpi.acpi_rsdp || context->acpi.acpi_rsdp_size <= 0) {
+		printf("ACPI rsdp not set.\n");
+		return -1;
+	}
+
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, context->acpi.acpi_rsdp, context->acpi.acpi_rsdp_size);
+	evlog_add(context->evlog, mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
+		   "ACPI etc/acpi/rsdp");
+	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}
+
+int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context)
+{
+	if (!context->acpi.acpi_tables || context->acpi.acpi_tables_size <= 0) {
+		printf("ACPI tables not set.\n");
+		return -1;
+	}
+
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, context->acpi.acpi_tables, context->acpi.acpi_tables_size);
+	evlog_add(context->evlog, mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
+		   "ACPI etc/acpi/tables");
+	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	return 0;
 }
