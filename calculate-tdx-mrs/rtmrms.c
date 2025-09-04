@@ -189,3 +189,22 @@ int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context)
 
 	return 0;
 }
+
+int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context)
+{
+	uint8_t *smbios_table;
+	size_t smbios_table_size;
+	if (read_file(&smbios_table, &smbios_table_size, context->smbios_table_file_path)) {
+		printf("Failed to load smbios table.");
+		return -1;
+	}
+
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, smbios_table, smbios_table_size);
+
+	evlog_add(context->evlog, mr_index, "EV_EFI_HANDOFF_TABLES", digest,
+		   "Smbios table");
+	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}

@@ -53,6 +53,7 @@ print_usage(const char *progname)
     printf("\t-a,  --acpirsdp\t\t\tPath to QEMU etc/acpi/rsdp file for RTMR0\n");
     printf("\t-t,  --acpitables\t\tPath to QEMU etc/acpi/tables file for RTMR0\n");
     printf("\t-l,  --tableloader\t\tPath to QEMU etc/table-loader file for RTMR0\n");
+	printf("\t	   --smbios\t\tPath to QEMU smbios table file for RTMR0\n");
     printf("\t     --bootorder <num>[,<num>,...]\t\tUEFI boot order variable as a comma separated list of integers\n");
     printf("\t     --bootxxxx <file> UEFI Boot#### variable data file (multiple possible)\n");
     printf("\t     --secureboot <file> UEFI secure boot SecureBoot variable data file\n");
@@ -100,6 +101,7 @@ main(int argc, char *argv[])
     const char *kek_path = NULL;
     const char *db_path = NULL;
     const char *dbx_path = NULL;
+	const char *smbios_path = NULL;
     uint16_t *boot_order = NULL;
     size_t len_boot_order = 0;
     char *boot_order_str;
@@ -299,6 +301,10 @@ main(int argc, char *argv[])
 			}
 			argv += 2;
 			argc -= 2;
+		} else if (!strcmp(argv[0], "--smbios")) {
+			smbios_path = argv[1];
+			argv += 2;
+			argc -= 2;
 		} else {
             printf("Invalid Option %s or argument missing\n", argv[0]);
             print_usage(progname);
@@ -416,8 +422,9 @@ main(int argc, char *argv[])
 		//if (calculate_rtmr0(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files, ovmf_version,
         //                    boot_order, len_boot_order, bootxxxx, num_bootxxxx,
         //                    secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
-		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf,
-								secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
+		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files,
+								secure_boot_path, pk_path, kek_path, db_path, dbx_path,
+								smbios_path)) {
             printf("Failed to calculate event log for RTMR 0\n");
             goto out;
 		}

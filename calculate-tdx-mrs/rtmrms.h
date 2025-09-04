@@ -25,6 +25,8 @@ typedef struct {
 
 	acpi_files_t acpi;
 
+	const char *smbios_table_file_path;
+
 } rtmrcontext_t;
 
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context);
@@ -36,3 +38,4 @@ int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context);
