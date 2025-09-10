@@ -45,6 +45,8 @@ int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
 		   "TD Hob passed from host VMM to guest firmware");
 	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_td_hob, SHA384_DIGEST_LENGTH);
 
+	free(ovmf_buf);
+
 	return -1;
 }
 
@@ -75,6 +77,8 @@ int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context)
 		   "Configuration Firmware Volume");
     
 	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_cfv, SHA384_DIGEST_LENGTH);
+
+	free(ovmf_buf);
 
 	return 0;
 }
@@ -207,6 +211,8 @@ int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context)
 	evlog_add(context->evlog, mr_index, "EV_EFI_HANDOFF_TABLES", digest,
 		   "Smbios table");
 	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	free(smbios_table);
 
 	return 0;
 }
