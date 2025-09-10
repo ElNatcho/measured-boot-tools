@@ -287,6 +287,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	// Measure SBat Level (??) (28. EV_EFI_VARIABLE_AUTHORITY)	
 
+	memcpy(mr, context.mrs[INDEX_RTMR0], SHA384_DIGEST_LENGTH);
+
 	return ret;
 }
 
