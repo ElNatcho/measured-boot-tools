@@ -226,7 +226,8 @@ out:
  */
 int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path, acpi_files_t *acpi_files,
 						const char *secure_boot_path, const char *pk_path, const char *kek_path,
-						const char *db_path, const char *dbx_path, const char *smbios_table_file)
+						const char *db_path, const char *dbx_path, const char *smbios_table_file,
+						uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx)
 {
 	int ret = 0;
 
@@ -242,6 +243,10 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 		},
 		.acpi = *acpi_files,
 		.smbios_table_file_path = smbios_table_file,
+		.boot_order = boot_order,
+		.num_boot_order= len_boot_order,
+		.bootxxxx_list = bootxxxx,
+		.num_bootxxxx = num_bootxxxx
 	};
 
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
@@ -277,6 +282,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	rtmr_measure_smbios_table(INDEX_RTMR0, &context);
 
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
+
+	rtmr_measure_efi_boot_vars(INDEX_RTMR0, &context);
 
 	// Measure SBat Level (??) (28. EV_EFI_VARIABLE_AUTHORITY)	
 

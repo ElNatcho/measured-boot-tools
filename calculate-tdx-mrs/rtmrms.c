@@ -1,12 +1,14 @@
 /* SPDX-License-Identifier: BSD-2-Clause-Patent */
 
-#include "eventlog.h"
+#include <string.h>
 #include <stdint.h> 
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
 
+#include "eventlog.h"
 #include "secureboot.h"
+#include "efi_boot.h"
 #include "common.h"
 #include "td_hob.h"
 #include "rtmrms.h"
@@ -205,6 +207,42 @@ int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context)
 	evlog_add(context->evlog, mr_index, "EV_EFI_HANDOFF_TABLES", digest,
 		   "Smbios table");
 	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}
+
+int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context)
+{
+	// Could be used in theory, however, this function omits the first 4 bytes of the measured buffers to compensate for
+	// the prepened 4 bytes in the /sys/firmware/efi/efivars/* files.
+	//return calculate_efi_boot_vars(EVP_sha384(), context->mrs[mr_index], mr_index, context->evlog,
+	//							context->boot_order, context->boot_order_size,
+	//							context->bootxxxx_list, context->num_bootxxxx);
+
+	// TODO: split this function into measure_boot_order and measure_bootxxxx
+
+	uint8_t boot_order_digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), boot_order_digest, (uint8_t*)context->boot_order,
+		  context->num_boot_order * sizeof(*context->boot_order));
+	evlog_add(context->evlog, mr_index, "EV_EFI_VARIABLE_BOOT", boot_order_digest,
+		   "VariableName - BootOrder, VendorGuid - 8BE4DF61-93CA-11D2-AA0D-00E098032B8C");
+	hash_extend(EVP_sha384(), context->mrs[mr_index], boot_order_digest, SHA384_DIGEST_LENGTH);
+
+	uint8_t *file_buf = NULL;
+	size_t file_size = 0;
+	uint8_t file_digest[SHA384_DIGEST_LENGTH];
+	for (size_t i = 0; i < context->num_bootxxxx; i++) {
+		if (read_file(&file_buf, &file_size, context->bootxxxx_list[i])) {
+			printf("Failed to read file %s\n", context->bootxxxx_list[i]);
+			return -1;
+		}
+		hash_buf(EVP_sha384(), file_digest, file_buf, file_size);
+		evlog_add(context->evlog, mr_index, "EV_EFI_VARIABLE_BOOT", file_digest,
+			"VariableName - Boot####, VendorGuid - 8BE4DF61-93CA-11D2-AA0D-00E098032B8C");
+		hash_extend(EVP_sha384(), context->mrs[mr_index], file_digest, SHA384_DIGEST_LENGTH);
+
+		free(file_buf);
+	}
 
 	return 0;
 }

@@ -53,7 +53,7 @@ print_usage(const char *progname)
     printf("\t-a,  --acpirsdp\t\t\tPath to QEMU etc/acpi/rsdp file for RTMR0\n");
     printf("\t-t,  --acpitables\t\tPath to QEMU etc/acpi/tables file for RTMR0\n");
     printf("\t-l,  --tableloader\t\tPath to QEMU etc/table-loader file for RTMR0\n");
-	printf("\t	   --smbios\t\tPath to QEMU smbios table file for RTMR0\n");
+	printf("\t     --smbios\t\tPath to QEMU smbios table file for RTMR0\n");
     printf("\t     --bootorder <num>[,<num>,...]\t\tUEFI boot order variable as a comma separated list of integers\n");
     printf("\t     --bootxxxx <file> UEFI Boot#### variable data file (multiple possible)\n");
     printf("\t     --secureboot <file> UEFI secure boot SecureBoot variable data file\n");
@@ -424,7 +424,7 @@ main(int argc, char *argv[])
         //                    secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
 		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files,
 								secure_boot_path, pk_path, kek_path, db_path, dbx_path,
-								smbios_path)) {
+								smbios_path, boot_order, len_boot_order, bootxxxx, num_bootxxxx)) {
             printf("Failed to calculate event log for RTMR 0\n");
             goto out;
 		}
@@ -499,6 +499,7 @@ main(int argc, char *argv[])
                 }
             } else if (evlog.format == FORMAT_TEXT) {
                 printf("Name: %s", index_to_mr(mr_nums[i]));
+				printf(" ");
                 print_data(mrs[mr_nums[i]], SHA384_DIGEST_LENGTH, NULL);
             } else {
                 printf("Unknown output format\n");

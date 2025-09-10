@@ -3,6 +3,7 @@
 #include "eventlog.h"
 #include "hash.h"
 #include "acpi.h"
+#include <stdint.h>
 
 #pragma once
 
@@ -27,6 +28,11 @@ typedef struct {
 
 	const char *smbios_table_file_path;
 
+	uint16_t *boot_order;
+	size_t num_boot_order;		// TODO: should be identical to num_bootxxxx, maybe combine?
+	char **bootxxxx_list;
+	size_t num_bootxxxx;
+
 } rtmrcontext_t;
 
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context);
@@ -39,3 +45,4 @@ int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context);
