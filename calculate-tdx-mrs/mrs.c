@@ -227,6 +227,7 @@ out:
 int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path, acpi_files_t *acpi_files,
 						const char *secure_boot_path, const char *pk_path, const char *kek_path,
 						const char *db_path, const char *dbx_path, const char *smbios_table_file,
+						const char* kernel_file_path,
 						uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx)
 {
 	int ret = 0;
@@ -246,7 +247,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 		.boot_order = boot_order,
 		.num_boot_order= len_boot_order,
 		.bootxxxx_list = bootxxxx,
-		.num_bootxxxx = num_bootxxxx
+		.num_bootxxxx = num_bootxxxx,
+		.kernel_file_path = kernel_file_path
 	};
 
 	measurement_config_t config;
@@ -281,7 +283,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	// Measure Smbios Table (13. EV_EFI_HANDOFF_TABLES)
 	// TODO: Same situation as with the ACPI tables. The smbios table can be dumped with `dmidecode`.
 
-	rtmr_measure_smbios_table(INDEX_RTMR0, &context);
+	//rtmr_measure_smbios_table(INDEX_RTMR0, &context);
+	config.mr_index = 1;
+	rtmr_measure_pe_kernel_image(&config, &context);
 
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 

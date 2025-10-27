@@ -1,10 +1,13 @@
 /* SPDX-License-Identifier: BSD-2-Clause-Patent */
 
+#include <sched.h>
 #include <string.h>
 #include <stdint.h> 
 
 #include <openssl/evp.h>
 #include <openssl/sha.h>
+
+#include "MeasureBootPeCoff.h"
 
 #include "eventlog.h"
 #include "secureboot.h"
@@ -14,6 +17,7 @@
 #include "rtmrms.h"
 #include "hash.h"
 #include "mrtd.h"
+#include <time.h>
 
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
 {
@@ -271,5 +275,37 @@ int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context)
 	evlog_add(context->evlog, config->mr_index, "EV_EFI_ACTION", digest, message);
 	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
+	return 0;
+}
+
+int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *context)
+{
+	if (!context->kernel_file_path) {
+		printf("No kernel image path provided.\n");
+		return -1;
+	}
+
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	uint8_t *kernel_buf = NULL;
+	size_t kernel_size = 0;
+
+	if (LoadPeImage(&kernel_buf, &kernel_size, context->kernel_file_path)) {
+		printf("Failed to load kernel pe image\n");
+		return -1;
+	}
+
+	EFI_STATUS status = MeasurePeImage(EVP_sha384(), digest, kernel_buf, kernel_size);
+	if (EFI_ERROR(status)) {
+		printf("Failed to measure kernel pe image\n");
+		// TODO: why openssl_free?
+		OPENSSL_free(kernel_buf);
+		return -1;
+	}
+
+	evlog_add(context->evlog, config->mr_index, "EV_EFI_BOOT_SERVICES_APPLICATION",
+				digest, "Kernel PE Image");
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	OPENSSL_free(kernel_buf);
 	return 0;
 }
