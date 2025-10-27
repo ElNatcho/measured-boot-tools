@@ -35,6 +35,11 @@ typedef struct {
 
 } rtmrcontext_t;
 
+typedef struct {
+	uint32_t mr_index;
+	char* action_text;
+} measurement_config_t;
+
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context);
@@ -46,3 +51,4 @@ int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context);

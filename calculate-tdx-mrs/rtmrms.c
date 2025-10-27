@@ -254,3 +254,22 @@ int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context)
 
 	return 0;
 }
+
+int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context)
+{
+	if (config->action_text) {
+		printf("No action text configured for measurement.\n");
+		return -1;
+	}
+
+	size_t max_msg_length = 256;
+	char message[max_msg_length];
+	snprintf(message, max_msg_length, "%s%s", "Measured Action: ", config->action_text);
+
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, (uint8_t*)config->action_text, strlen(config->action_text));
+	evlog_add(context->evlog, config->mr_index, "EV_EFI_ACTION", digest, message);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}

@@ -249,11 +249,13 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 		.num_bootxxxx = num_bootxxxx
 	};
 
+	measurement_config_t config;
+
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
 
 	rtmr_measure_tdhob(INDEX_RTMR0, &context);
 
-	rtmr_measure_cfv(INDEX_RTMR0, &context);
+	//rtmr_measure_cfv(INDEX_RTMR0, &context);
 
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 
@@ -284,6 +286,16 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 
 	rtmr_measure_efi_boot_vars(INDEX_RTMR0, &context);
+
+	config.mr_index = 1;
+	config.action_text = "Calling EFI Application from Boot Option";
+	rtmr_measure_action(&config, &context);
+
+	config.action_text = "Exit Boot Services Invocation";
+	rtmr_measure_action(&config, &context);
+
+	config.action_text = "Exit Boot Services Returned with Success";
+	rtmr_measure_action(&config, &context);
 
 	// Measure SBat Level (??) (28. EV_EFI_VARIABLE_AUTHORITY)	
 
