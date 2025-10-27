@@ -291,6 +291,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	config.action_text = "Calling EFI Application from Boot Option";
 	rtmr_measure_action(&config, &context);
 
+	rtmr_measure_separator(INDEX_RTMR0, &context);
+
 	config.action_text = "Exit Boot Services Invocation";
 	rtmr_measure_action(&config, &context);
 

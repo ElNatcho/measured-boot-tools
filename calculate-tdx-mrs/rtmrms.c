@@ -257,7 +257,7 @@ int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context)
 
 int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context)
 {
-	if (config->action_text) {
+	if (!config->action_text) {
 		printf("No action text configured for measurement.\n");
 		return -1;
 	}
