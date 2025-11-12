@@ -1064,11 +1064,33 @@ MeasurePeImage (
     DEBUG("\tHashSize: %lld\n", HashSize);
   }
 
+  DEBUG("MeasurePE(%p %lld)", HashBase, HashSize);
+  for (uint32_t i = 0; i < 128; i++) {
+    if (i % 16 == 0) {
+		DEBUG("\n");
+	} else {
+		if (i % 2 == 0) DEBUG (" ");
+	}
+	DEBUG("%02x", *((uint8_t*)HashBase + i));
+  }
+  DEBUG("\n");
+
   Status = EVP_DigestUpdate(ctx, HashBase, HashSize);
   if (EFI_ERROR (Status)) {
     goto Finish;
   }
 
+  DEBUG("MeasurePE4(%p %lld)", HashBase, HashSize);
+  for (uint32_t i = 0; i < 128; i++) {
+    if (i % 16 == 0) {
+		DEBUG("\n");
+	} else {
+		if (i % 2 == 0) DEBUG (" ");
+	}
+	DEBUG("%02x", *((uint8_t*)HashBase + i));
+  }
+  DEBUG("\n");
+  
   //
   // 5.  Skip over the image checksum (it occupies a single ULONG).
   //
@@ -1097,6 +1119,18 @@ MeasurePeImage (
         goto Finish;
       }
     }
+
+	DEBUG("MeasurePE6(%p %lld)", HashBase, HashSize);
+    for (uint32_t i = 0; i < 128; i++) {
+      if (i % 16 == 0) {
+	 	DEBUG("\n");
+	  } else {
+		if (i % 2 == 0) DEBUG (" ");
+	  }
+	  DEBUG("%02x", *((uint8_t*)HashBase + i));
+    }
+    DEBUG("\n");
+	
   } else {
     //
     // 7.  Hash everything from the end of the checksum to the start of the Cert Directory.
@@ -1122,6 +1156,17 @@ MeasurePeImage (
       }
     }
 
+    DEBUG("MeasurePE7(%p %lld)", HashBase, HashSize);
+      for (uint32_t i = 0; i < 128; i++) {
+        if (i % 16 == 0) {
+		  DEBUG("\n");
+	  } else {
+		if (i % 2 == 0) DEBUG (" ");
+	  }
+	  DEBUG("%02x", *((uint8_t*)HashBase + i));
+    }
+    DEBUG("\n");
+
     //
     // 8.  Skip over the Cert Directory. (It is sizeof(IMAGE_DATA_DIRECTORY) bytes.)
     // 9.  Hash everything from the end of the Cert Directory to the end of image header.
@@ -1146,6 +1191,18 @@ MeasurePeImage (
         goto Finish;
       }
     }
+
+    DEBUG("MeasurePE9(%p %lld)", HashBase, HashSize);
+    for (uint32_t i = 0; i < 128; i++) {
+      if (i % 16 == 0) {
+		DEBUG("\n");
+	  } else {
+		if (i % 2 == 0) DEBUG (" ");
+	  }
+	  DEBUG("%02x", *((uint8_t*)HashBase + i));
+    }
+    DEBUG("\n");
+
   }
 
   //
@@ -1218,6 +1275,17 @@ MeasurePeImage (
       goto Finish;
     }
 
+    DEBUG("MeasurePE15(%p %lld)", HashBase, HashSize);
+    for (uint32_t i = 0; i < 128; i++) {
+      if (i % 16 == 0) {
+		DEBUG("\n");
+	  } else {
+		if (i % 2 == 0) DEBUG (" ");
+	  }
+	  DEBUG("%02x", *((uint8_t*)HashBase + i));
+    }
+    DEBUG("\n");
+
     SumOfBytesHashed += HashSize;
     DEBUG("\t\tSum: %lld, SizeOfRawData: %lld, HashBase: %p\n", SumOfBytesHashed, (UINTN) Section->SizeOfRawData, HashBase);
   }
@@ -1258,6 +1326,17 @@ MeasurePeImage (
       Status = EFI_UNSUPPORTED;
       goto Finish;
     }
+
+	DEBUG("MeasurePE16(%p %lld)", HashBase, HashSize);
+    for (uint32_t i = 0; i < 128; i++) {
+      if (i % 16 == 0) {
+		DEBUG("\n");
+	  } else {
+		if (i % 2 == 0) DEBUG (" ");
+	  }
+	  DEBUG("%02x", *((uint8_t*)HashBase + i));
+    }
+    DEBUG("\n");
   }
 
   DEBUG("SumOfBytesHashed: %lld\n", SumOfBytesHashed);
