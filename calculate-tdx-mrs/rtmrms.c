@@ -278,6 +278,72 @@ int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context)
 	return 0;
 }
 
+// see qemu source include/standard-headers/asm-x86/bootparam.h
+#define SETUP_NONE					0
+#define SETUP_E820_EXT				1
+#define SETUP_DTB					2
+#define SETUP_PCI					3
+#define SETUP_EFI					4
+#define SETUP_APPLE_PROPERTIES		5
+#define SETUP_JAILHOUSE				6
+#define SETUP_CC_BLOB				7
+#define SETUP_IMA					8
+#define SETUP_RNG_SEED				9
+#define SETUP_ENUM_MAX				SETUP_RNG_SEED
+
+#define SETUP_INDIRECT				(1<<31)
+#define SETUP_TYPE_MAX				(SETUP_ENUM_MAX | SETUP_INDIRECT)
+
+typedef struct __attribute__((packed))
+{
+	uint64_t next;
+	uint32_t type;
+	uint32_t len;
+	uint8_t data[];
+} setup_data_t;
+
+#define QEMU_ALIGN_DOWN(n, m) ((n) / (m) * (m))
+#define QEMU_ALIGN_UP(n, m) QEMU_ALIGN_DOWN((n) + (m) - 1, (m))
+
+static int _setup_kernel_image_for_measurement(measurement_config_t *config, rtmrcontext_t *context,
+											   uint8_t *kernel_buf, size_t kernel_size)
+{
+	(void) config;
+
+	kernel_setup_hdr_t *hdr = (kernel_setup_hdr_t*)kernel_buf;
+
+	if (hdr->header != 0x53726448) {
+		printf("warning: kernel hdr->header field != \"HdrS\"\n");
+	}
+
+	// TODO: make configurable, now only direct boot is implemented
+	hdr->type_of_loader = QEMU;
+	hdr->loadflags = 0x81;
+
+	// TODO: has to be set statically for now. See hw/i386/x86.c:x86_load_linux for the calculation of initrd_addr
+	hdr->ramdisk_image = 0x7b220000;
+	// TODO: handle fstat error
+	hdr->ramdisk_size = get_file_size(context->initrd_file_path);
+	
+	hdr->heap_end_ptr = 0xfe00;
+
+	hdr->cmd_line_ptr = 0x020000;
+
+	printf("setup sects: %d\n", hdr->setup_sects);
+
+	// TODO: see qemu hw/i386/x86.c:x86_load_linux
+	//uint32_t setup_size = ((hdr->setup_sects > 0 ? hdr->setup_sects : 4) + 1) * 512;
+	uint32_t setup_size = 5 * 512;
+	uint32_t setup_offset = QEMU_ALIGN_UP(get_file_size(context->kernel_file_path) - setup_size, 16);
+
+	printf("%x: ", setup_offset);	
+
+	for (uint32_t i = 0; i < 32; i++) printf("%0.02x", *(kernel_buf + setup_offset + i));
+	printf("\n");
+
+	return 0;
+}
+
 int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *context)
 {
 	if (!context->kernel_file_path) {
@@ -294,6 +360,13 @@ int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *co
 		return -1;
 	}
 
+	// Prepare the kernel image to be measured, i.e., set the appropriate values in the kernel header
+	// and write the dtb to the setup_config struct
+	if (_setup_kernel_image_for_measurement(config, context, kernel_buf, kernel_size) != 0) {
+		printf("Failed to prepare kernel image for measurement\n");
+		return -1;
+	}
+
 	EFI_STATUS status = MeasurePeImage(EVP_sha384(), digest, kernel_buf, kernel_size);
 	if (EFI_ERROR(status)) {
 		printf("Failed to measure kernel pe image\n");
@@ -307,5 +380,25 @@ int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *co
 	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	OPENSSL_free(kernel_buf);
+	return 0;
+}
+
+int rtmr_measure_initrd_image(measurement_config_t *config, rtmrcontext_t *context)
+{
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+
+	evlog_add(context->evlog, config->mr_index, "EV_EVENT_TAG",
+				digest, "Linux initrd");
+
+	return 0;
+}
+
+int rtmr_measure_cmdline(measurement_config_t *config, rtmrcontext_t *context)
+{
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+
+	evlog_add(context->evlog, config->mr_index, "EV_EVENT_TAG",
+				digest, "LOADED_IMAGE::LoadOptions (Cmdline)");
+
 	return 0;
 }

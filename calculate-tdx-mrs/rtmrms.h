@@ -34,6 +34,7 @@ typedef struct {
 	size_t num_bootxxxx;
 
 	const char *kernel_file_path;
+	const char *initrd_file_path;
 
 } rtmrcontext_t;
 
@@ -55,3 +56,5 @@ int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context);
 int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context);
 int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_initrd_image(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_cmdline(measurement_config_t *config, rtmrcontext_t *context);

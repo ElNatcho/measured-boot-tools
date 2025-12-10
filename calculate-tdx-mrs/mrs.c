@@ -297,6 +297,10 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	rtmr_measure_separator(INDEX_RTMR0, &context);
 
+	rtmr_measure_cmdline(&config, &context);
+
+	rtmr_measure_initrd_image(&config, &context);
+
 	config.action_text = "Exit Boot Services Invocation";
 	rtmr_measure_action(&config, &context);
 
