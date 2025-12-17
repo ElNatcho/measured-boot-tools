@@ -19,7 +19,7 @@ calculate_rtmr0(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file,
 int
 calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file, acpi_files_t *acpi_files,
 					const char *secure_boot, const char *pk, const char *kek, const char *db, const char *dbx,
-					const char *smbios_table_file, const char *kernel_file,
+					const char *smbios_table_file, const char *kernel_file_path, const char *initrd_file_path,
 					uint16_t *boot_order, size_t num_boot_order, char **bootxxxx, size_t num_bootxxxx);
 
 int
