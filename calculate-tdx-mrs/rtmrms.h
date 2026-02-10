@@ -35,6 +35,7 @@ typedef struct {
 
 	const char *kernel_file_path;
 	const char *initrd_file_path;
+	const char *cmdline_file_path;
 
 } rtmrcontext_t;
 

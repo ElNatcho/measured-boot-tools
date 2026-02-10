@@ -424,7 +424,7 @@ main(int argc, char *argv[])
         //                    secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
 		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files,
 								secure_boot_path, pk_path, kek_path, db_path, dbx_path, smbios_path,
-								kernel, ramdisk, boot_order, len_boot_order, bootxxxx, num_bootxxxx)) {
+								kernel, ramdisk, cmdline, boot_order, len_boot_order, bootxxxx, num_bootxxxx)) {
             printf("Failed to calculate event log for RTMR 0\n");
             goto out;
 		}

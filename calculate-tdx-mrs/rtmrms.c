@@ -482,14 +482,16 @@ static int _setup_kernel_image_for_measurement(measurement_config_t *config, rtm
 {
 	(void) config;
 
+	/*
 	*buf_size = *buf_size + after_kernel_blob_size;
 	*kernel_buf = realloc(*kernel_buf, *buf_size); //*buf_size);
 	if (!*kernel_buf) {
 		printf("failed to realloc kernel_buf");
 		return -1;
 	}
+	*/
 
-	memcpy((*kernel_buf) + *kernel_size, after_kernel_blob, after_kernel_blob_size);
+	//memcpy((*kernel_buf) + *kernel_size, after_kernel_blob, after_kernel_blob_size);
 
 	kernel_setup_hdr_t *hdr = (kernel_setup_hdr_t*)(*kernel_buf);
 
@@ -569,20 +571,51 @@ int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *co
 
 int rtmr_measure_initrd_image(measurement_config_t *config, rtmrcontext_t *context)
 {
+	if (!context->initrd_file_path) {
+		printf("Failed to open ovmf: no path provided\n");
+		return -1;
+	}
+
+	uint8_t *initrd_buf = NULL;
+	uint64_t initrd_size = 0;
+	int ret = read_file(&initrd_buf, &initrd_size, context->initrd_file_path);
+	if (ret) {
+		printf("Failed to load %s\n", context->initrd_file_path);
+		return -1;
+	}
+
 	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, initrd_buf, initrd_size);
 
 	evlog_add(context->evlog, config->mr_index, "EV_EVENT_TAG",
 				digest, "Linux initrd");
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
 int rtmr_measure_cmdline(measurement_config_t *config, rtmrcontext_t *context)
 {
+	if (!context->cmdline_file_path) {
+		printf("Failed to open ovmf: no path provided\n");
+		return -1;
+	}
+
+	uint8_t *cmdline_buf = NULL;
+	uint64_t cmdline_size = 0;
+	int ret = read_file(&cmdline_buf, &cmdline_size, context->cmdline_file_path);
+	if (ret) {
+		printf("Failed to load %s\n", context->cmdline_file_path);
+		return -1;
+	}
+
 	uint8_t digest[SHA384_DIGEST_LENGTH];
+	hash_buf(EVP_sha384(), digest, cmdline_buf, cmdline_size);
 
 	evlog_add(context->evlog, config->mr_index, "EV_EVENT_TAG",
 				digest, "LOADED_IMAGE::LoadOptions (Cmdline)");
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
+
 
 	return 0;
 }

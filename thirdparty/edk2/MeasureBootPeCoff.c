@@ -1299,6 +1299,8 @@ MeasurePeImage (
   if (buf_size > SumOfBytesHashed) {
     HashBase = (UINT8 *) (UINTN) ImageAddress + SumOfBytesHashed;
 
+	DEBUG("OptionalHeader Magic: %02x\n", Hdr.Pe32->OptionalHeader.Magic);
+
     if (NumberOfRvaAndSizes <= EFI_IMAGE_DIRECTORY_ENTRY_SECURITY) {
       CertSize = 0;
     } else {
@@ -1326,9 +1328,11 @@ MeasurePeImage (
       Status = EFI_UNSUPPORTED;
       goto Finish;
     }
+	
+	printf("HashSize=0x%llx\nbuf_size=0x%llx\nCertSize=0x%x\nSumOfBytesHashed=0x%llx\n", HashSize, buf_size, CertSize, SumOfBytesHashed);
 
 	DEBUG("MeasurePE16(%p %lld)", HashBase, HashSize);
-    for (uint32_t i = 0; i < 128; i++) {
+    for (uint32_t i = HashSize - 4096; i < HashSize; i++) {
       if (i % 16 == 0) {
 		DEBUG("\n");
 	  } else {

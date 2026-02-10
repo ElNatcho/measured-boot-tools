@@ -227,7 +227,7 @@ out:
 int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path, acpi_files_t *acpi_files,
 						const char *secure_boot_path, const char *pk_path, const char *kek_path,
 						const char *db_path, const char *dbx_path, const char *smbios_table_file,
-						const char *kernel_file_path, const char *initrd_file_path,
+						const char *kernel_file_path, const char *initrd_file_path, const char *cmdline_file_path,
 						uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx)
 {
 	int ret = 0;
@@ -249,7 +249,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 		.bootxxxx_list = bootxxxx,
 		.num_bootxxxx = num_bootxxxx,
 		.kernel_file_path = kernel_file_path,
-		.initrd_file_path = initrd_file_path
+		.initrd_file_path = initrd_file_path,
+		.cmdline_file_path = cmdline_file_path
 	};
 
 	measurement_config_t config;
