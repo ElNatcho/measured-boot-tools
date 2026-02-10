@@ -259,11 +259,11 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	rtmr_measure_tdhob(INDEX_RTMR0, &context);
 
-	//rtmr_measure_cfv(INDEX_RTMR0, &context);
+	rtmr_measure_cfv(INDEX_RTMR0, &context);
 
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 
-	rtmr_measure_qemu_fw_cfg(INDEX_RTMR0, &context);
+	//rtmr_measure_qemu_fw_cfg(INDEX_RTMR0, &context);
 	rtmr_measure_qemu_fw_cfg_boot_menu(INDEX_RTMR0, &context);
 	rtmr_measure_qemu_fw_cfg_boot_order(INDEX_RTMR0, &context);
 
