@@ -19,6 +19,18 @@
 #include "mrtd.h"
 #include <time.h>
 
+int rtmr_measure_dummy(uint32_t mr_index, rtmrcontext_t *context) {
+	(void) context;
+	
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	memset(digest, 0, SHA384_DIGEST_LENGTH);
+
+	evlog_add(context->evlog, mr_index, "DUMMY Measurement", digest,
+		   "This is a dummy measurement, acting as a placeholder for a, yet, unknown measurement.");
+
+	return 0;
+}
+
 int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
 {
 	int ret = -1;
@@ -105,6 +117,30 @@ int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context)
 		   " capable of measuring a non existent fw_cfg device)");
 
 	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_fw_cfg, SHA384_DIGEST_LENGTH);
+
+	return 0;
+}
+
+int rtmr_measure_qemu_fw_cfg_boot_menu(uint32_t mr_index, rtmrcontext_t *context) {
+	(void) context;
+	
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	memset(digest, 0, SHA384_DIGEST_LENGTH);
+
+	evlog_add(context->evlog, mr_index, "QEMU FW CFG BootMenu", digest,
+		   "QEMU FW CFG BootMenu Entry (WARNING: Dummy implementation)");
+
+	return 0;
+}
+
+int rtmr_measure_qemu_fw_cfg_boot_order(uint32_t mr_index, rtmrcontext_t *context) {
+	(void) context;
+	
+	uint8_t digest[SHA384_DIGEST_LENGTH];
+	memset(digest, 0, SHA384_DIGEST_LENGTH);
+
+	evlog_add(context->evlog, mr_index, "QEMU FW CFG BootOrder", digest,
+		   "QEMU FW CFG BootOrder Entry (WARNING: Dummy implementation)");
 
 	return 0;
 }

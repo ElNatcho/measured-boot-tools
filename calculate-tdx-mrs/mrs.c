@@ -264,6 +264,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 
 	rtmr_measure_qemu_fw_cfg(INDEX_RTMR0, &context);
+	rtmr_measure_qemu_fw_cfg_boot_menu(INDEX_RTMR0, &context);
+	rtmr_measure_qemu_fw_cfg_boot_order(INDEX_RTMR0, &context);
 
 	// Measure EFI secure boot variables (4.,5.,6.,7.,8. EV_EFI_VARIABLE_DRIVER_CONFIG)
 
@@ -288,6 +290,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	//rtmr_measure_smbios_table(INDEX_RTMR0, &context);
 	config.mr_index = 1;
 	rtmr_measure_pe_kernel_image(&config, &context);
+
+	// yet unkown measurement
+	rtmr_measure_dummy(INDEX_RTMR0, &context);
 
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 

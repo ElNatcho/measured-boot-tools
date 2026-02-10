@@ -48,7 +48,7 @@ print_usage(const char *progname)
     printf("\t-s,  --summary\t\t\tPrint final MR values\n");
     printf("\t     --verbose\t\t\tPrint verbose debug output\n");
     printf("\t-c,  --config\t\t\tPath to configuration file\n");
-    printf("\t     --cmdline\t\t\tKernel commandline\n");
+    printf("\t     --cmdline\t\t\tKernel commandline (file content must be UTF-16LE)\n");
     printf("\t     --addzeros <num>\t\tAdd <num> trailing zeros to kernel cmdline (default: 1)\n");
     printf("\t-a,  --acpirsdp\t\t\tPath to QEMU etc/acpi/rsdp file for RTMR0\n");
     printf("\t-t,  --acpitables\t\tPath to QEMU etc/acpi/tables file for RTMR0\n");
