@@ -33,6 +33,9 @@ typedef struct {
 	char **bootxxxx_list;
 	size_t num_bootxxxx;
 
+	const char *fwcfg_bootorder_file_path;
+	const char *fwcfg_bootmenu_file_path;
+
 	const char *kernel_file_path;
 	const char *initrd_file_path;
 	const char *cmdline_file_path;

@@ -55,6 +55,8 @@ print_usage(const char *progname)
     printf("\t-l,  --tableloader\t\tPath to QEMU etc/table-loader file for RTMR0\n");
 	printf("\t     --smbios\t\tPath to QEMU smbios table file for RTMR0\n");
     printf("\t     --bootorder <num>[,<num>,...]\t\tUEFI boot order variable as a comma separated list of integers\n");
+	printf("\t	   --fwcfg-bootorder <file>\t\tPath to the bootorder of the fw-cfg device\n");
+	printf("\t	   --fwcfg-bootmenu <file>\t\tPath to the bootmenu file of the fw-cfg device\n");
     printf("\t     --bootxxxx <file> UEFI Boot#### variable data file (multiple possible)\n");
     printf("\t     --secureboot <file> UEFI secure boot SecureBoot variable data file\n");
     printf("\t     --pk <file> UEFI secure boot Platform Key (PK) variable data file\n");
@@ -102,6 +104,8 @@ main(int argc, char *argv[])
     const char *db_path = NULL;
     const char *dbx_path = NULL;
 	const char *smbios_path = NULL;
+	const char *fwcfg_bootorder_path = NULL;
+	const char *fwcfg_bootmenu_path = NULL;
     uint16_t *boot_order = NULL;
     size_t len_boot_order = 0;
     char *boot_order_str;
@@ -305,6 +309,14 @@ main(int argc, char *argv[])
 			smbios_path = argv[1];
 			argv += 2;
 			argc -= 2;
+		} else if (!strcmp(argv[0], "--fwcfg-bootorder")) {
+			fwcfg_bootorder_path = argv[1];
+			argv += 2;
+			argc -= 2;
+		} else if (!strcmp(argv[0], "--fwcfg-bootmenu")) {
+			fwcfg_bootmenu_path = argv[1];
+			argv += 2;
+			argc -= 2;
 		} else {
             printf("Invalid Option %s or argument missing\n", argv[0]);
             print_usage(progname);
@@ -424,7 +436,8 @@ main(int argc, char *argv[])
         //                    secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
 		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files,
 								secure_boot_path, pk_path, kek_path, db_path, dbx_path, smbios_path,
-								kernel, ramdisk, cmdline, boot_order, len_boot_order, bootxxxx, num_bootxxxx)) {
+								kernel, ramdisk, cmdline, boot_order, len_boot_order, bootxxxx, num_bootxxxx,
+								fwcfg_bootorder_path, fwcfg_bootmenu_path)) {
             printf("Failed to calculate event log for RTMR 0\n");
             goto out;
 		}

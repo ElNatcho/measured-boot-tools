@@ -21,7 +21,8 @@ calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file, acpi_
 					const char *secure_boot, const char *pk, const char *kek, const char *db, const char *dbx,
 					const char *smbios_table_file, const char *kernel_file_path, const char *initrd_file_path,
 					const char *cmdline_file_path, uint16_t *boot_order, size_t num_boot_order,
-					char **bootxxxx, size_t num_bootxxxx);
+					char **bootxxxx, size_t num_bootxxxx, const char* fwcfg_bootorder_file_path,
+					const char* fwcfg_bootmenu_file_path);
 
 int
 calculate_rtmr1(uint8_t *mr, eventlog_t *evlog, const char *kernel_file, const char *config_file,

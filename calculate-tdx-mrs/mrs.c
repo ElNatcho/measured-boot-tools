@@ -228,7 +228,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 						const char *secure_boot_path, const char *pk_path, const char *kek_path,
 						const char *db_path, const char *dbx_path, const char *smbios_table_file,
 						const char *kernel_file_path, const char *initrd_file_path, const char *cmdline_file_path,
-						uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx)
+						uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx,
+						const char* fwcfg_bootorder_file_path, const char* fwcfg_bootmenu_file_path)
 {
 	int ret = 0;
 
@@ -250,7 +251,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 		.num_bootxxxx = num_bootxxxx,
 		.kernel_file_path = kernel_file_path,
 		.initrd_file_path = initrd_file_path,
-		.cmdline_file_path = cmdline_file_path
+		.cmdline_file_path = cmdline_file_path,
+		.fwcfg_bootmenu_file_path = fwcfg_bootmenu_file_path,
+		.fwcfg_bootorder_file_path = fwcfg_bootorder_file_path
 	};
 
 	measurement_config_t config;

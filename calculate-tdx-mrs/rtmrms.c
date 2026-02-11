@@ -122,25 +122,39 @@ int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context)
 }
 
 int rtmr_measure_qemu_fw_cfg_boot_menu(uint32_t mr_index, rtmrcontext_t *context) {
-	(void) context;
-	
+	uint8_t *file_buf;
+	size_t file_size;
+	if(read_file(&file_buf, &file_size, context->fwcfg_bootorder_file_path)) {
+		printf("Failed to read %s.\n", context->fwcfg_bootorder_file_path);
+		return -1;
+	}
+
 	uint8_t digest[SHA384_DIGEST_LENGTH];
-	memset(digest, 0, SHA384_DIGEST_LENGTH);
+	hash_buf(EVP_sha384(), digest, file_buf, file_size);
 
 	evlog_add(context->evlog, mr_index, "QEMU FW CFG BootMenu", digest,
-		   "QEMU FW CFG BootMenu Entry (WARNING: Dummy implementation)");
+		   "QEMU FW CFG BootMenu Entry");
+
+	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
 int rtmr_measure_qemu_fw_cfg_boot_order(uint32_t mr_index, rtmrcontext_t *context) {
-	(void) context;
-	
+	uint8_t *file_buf;
+	size_t file_size;
+	if(read_file(&file_buf, &file_size, context->fwcfg_bootorder_file_path)) {
+		printf("Failed to read %s.\n", context->fwcfg_bootorder_file_path);
+		return -1;
+	}
+
 	uint8_t digest[SHA384_DIGEST_LENGTH];
-	memset(digest, 0, SHA384_DIGEST_LENGTH);
+	hash_buf(EVP_sha384(), digest, file_buf, file_size);
 
 	evlog_add(context->evlog, mr_index, "QEMU FW CFG BootOrder", digest,
-		   "QEMU FW CFG BootOrder Entry (WARNING: Dummy implementation)");
+		   "QEMU FW CFG BootOrder Entry");
+
+	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
