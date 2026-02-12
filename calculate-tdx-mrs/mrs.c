@@ -290,12 +290,11 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	// Measure Smbios Table (13. EV_EFI_HANDOFF_TABLES)
 	// TODO: Same situation as with the ACPI tables. The smbios table can be dumped with `dmidecode`.
 
-	//rtmr_measure_smbios_table(INDEX_RTMR0, &context);
+
 	config.mr_index = 1;
 	rtmr_measure_pe_kernel_image(&config, &context);
-
-	// yet unkown measurement
-	rtmr_measure_dummy(INDEX_RTMR0, &context);
+	
+	rtmr_measure_smbios_table(INDEX_RTMR0, &context);
 
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 
