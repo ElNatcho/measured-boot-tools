@@ -124,8 +124,8 @@ int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context)
 int rtmr_measure_qemu_fw_cfg_boot_menu(uint32_t mr_index, rtmrcontext_t *context) {
 	uint8_t *file_buf;
 	size_t file_size;
-	if(read_file(&file_buf, &file_size, context->fwcfg_bootorder_file_path)) {
-		printf("Failed to read %s.\n", context->fwcfg_bootorder_file_path);
+	if(read_file(&file_buf, &file_size, context->fwcfg_bootmenu_file_path)) {
+		printf("Failed to read %s.\n", context->fwcfg_bootmenu_file_path);
 		return -1;
 	}
 
