@@ -141,7 +141,7 @@ evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, co
 
 			assert(evlog->compare_digest_list_count >= evlog->compare_digest_list_offset);
 
-			if (evlog->compare_digest_list_count == evlog->compare_digest_list_offset) {
+			if (index == INDEX_MRTD || evlog->compare_digest_list_count == evlog->compare_digest_list_offset) {
 				cmphashstr = "n/a";
 				matchstr = "";
 			} else {

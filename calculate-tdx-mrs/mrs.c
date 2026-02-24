@@ -260,6 +260,8 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
 
+	config.mr_index = INDEX_RTMR0;
+
 	rtmr_measure_tdhob(&config, &context);
 
 	rtmr_measure_cfv(&config, &context);
@@ -291,24 +293,33 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	// TODO: Same situation as with the ACPI tables. The smbios table can be dumped with `dmidecode`.
 
 
-	config.mr_index = 1;
+	config.mr_index = INDEX_RTMR1;
+
 	rtmr_measure_pe_kernel_image(&config, &context);
 	
+	config.mr_index = INDEX_RTMR0;
+
 	rtmr_measure_smbios_table(&config, &context);
 
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 
 	rtmr_measure_efi_boot_vars(&config, &context);
 
-	config.mr_index = 1;
+	config.mr_index = INDEX_RTMR1;
+
 	config.action_text = "Calling EFI Application from Boot Option";
+
 	rtmr_measure_action(&config, &context);
 
 	rtmr_measure_separator(&config, &context);
 
+	config.mr_index = INDEX_RTMR2;
+
 	rtmr_measure_cmdline(&config, &context);
 
 	rtmr_measure_initrd_image(&config, &context);
+
+	config.mr_index = INDEX_RTMR1;
 
 	config.action_text = "Exit Boot Services Invocation";
 	rtmr_measure_action(&config, &context);
