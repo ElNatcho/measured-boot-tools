@@ -15,6 +15,7 @@
 #include <libgen.h>
 #include <wchar.h>
 #include <uchar.h>
+#include <assert.h>
 
 #include <openssl/pkcs7.h>
 #include <openssl/ssl.h>
@@ -128,6 +129,8 @@ calculate_rtmr0(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file,
                 uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx,
                 const char *secure_boot, const char *pk, const char *kek, const char *db, const char *dbx)
 {
+	assert(0 && "Legacy - dont use anymore");
+
     int ret = -1;
     long len = 0;
 
@@ -224,8 +227,8 @@ out:
  *
  *
  */
-int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_path, acpi_files_t *acpi_files,
-						const char *secure_boot_path, const char *pk_path, const char *kek_path,
+int calculate_rtmr(uint8_t (*mr)[MR_LEN][SHA384_DIGEST_LENGTH], eventlog_t *evlog, const char *ovmf_file_path, 
+						acpi_files_t *acpi_files, const char *secure_boot_path, const char *pk_path, const char *kek_path,
 						const char *db_path, const char *dbx_path, const char *smbios_table_file,
 						const char *kernel_file_path, const char *initrd_file_path, const char *cmdline_file_path,
 						uint16_t *boot_order, size_t len_boot_order, char **bootxxxx, size_t num_bootxxxx,
@@ -329,7 +332,9 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	// Measure SBat Level (??) (28. EV_EFI_VARIABLE_AUTHORITY)	
 
-	memcpy(mr, context.mrs[INDEX_RTMR0], SHA384_DIGEST_LENGTH);
+	memcpy((*mr)[INDEX_RTMR0], context.mrs[INDEX_RTMR0], SHA384_DIGEST_LENGTH);
+	memcpy((*mr)[INDEX_RTMR1], context.mrs[INDEX_RTMR1], SHA384_DIGEST_LENGTH);
+	memcpy((*mr)[INDEX_RTMR2], context.mrs[INDEX_RTMR2], SHA384_DIGEST_LENGTH);
 
 	return ret;
 }
@@ -344,6 +349,8 @@ int
 calculate_rtmr1(uint8_t *mr, eventlog_t *evlog, const char *kernel_file, const char *config_file,
                 const char *dump_kernel_path, const char *ovmf_version)
 {
+	assert(0 && "Legacy - dont use anymore");
+
     int ret = -1;
 
     DEBUG("Calculating RTMR1...\n");
@@ -450,6 +457,8 @@ out:
 int
 calculate_rtmr2(uint8_t *mr, eventlog_t *evlog, const char *cmdline_file, size_t trailing_zeros)
 {
+	assert(0 && "Legacy - dont use anymore");
+
     int ret = -1;
 
     DEBUG("Calculating RTMR2...\n");
@@ -503,6 +512,8 @@ out:
 int
 calculate_rtmr3(uint8_t *mr, eventlog_t *evlog)
 {
+	assert(0 && "Legacy - dont use anymore");
+
     (void)evlog;
 
     int ret = -1;

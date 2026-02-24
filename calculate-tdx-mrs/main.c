@@ -15,6 +15,7 @@
 #include <libgen.h>
 #include <wchar.h>
 #include <uchar.h>
+#include <assert.h>
 
 #include <openssl/pkcs7.h>
 #include <openssl/ssl.h>
@@ -114,8 +115,8 @@ main(int argc, char *argv[])
     size_t cmdline_trailing_zeros = 1;
     bool print_event_log = false;
     bool print_summary = false;
-    uint32_t *mr_nums = NULL;
-    size_t len_mr_nums = 0;
+    uint32_t mr_nums[] = {0, 1, 2, 3};
+    size_t len_mr_nums = 4;
     char *mr_str = NULL;
     const char *progname = argv[0];
     eventlog_t evlog = {
@@ -267,7 +268,9 @@ main(int argc, char *argv[])
             argv += 2;
             argc -= 2;
         } else if ((!strcmp(argv[0], "-m") || !strcmp(argv[0], "--mrs")) && argc >= 2) {
-            mr_str = (char *)malloc(strlen(argv[1]) + 1);
+			assert(0 && "currently not supported");	
+            /*
+			mr_str = (char *)malloc(strlen(argv[1]) + 1);
             if (!mr_str) {
                 printf("Failed to allocate memory\n");
                 goto out;
@@ -282,6 +285,7 @@ main(int argc, char *argv[])
             }
             argv += 2;
             argc -= 2;
+			*/
         } else if ((!strcmp(argv[0], "-e") || !strcmp(argv[0], "--eventlog"))) {
             print_event_log = true;
             argv++;
@@ -330,7 +334,7 @@ main(int argc, char *argv[])
         len_boot_order = 1;
     }
 
-
+	// TODO: alter code ot not use mr_nums
     if (!kernel && contains(mr_nums, len_mr_nums, INDEX_RTMR1)) {
         printf("Kernel must be specified\n");
         print_usage(progname);
@@ -352,12 +356,12 @@ main(int argc, char *argv[])
         print_usage(progname);
         goto out;
     }
-
+	/*
     if (len_mr_nums == 0) {
         printf("No measurement registers specified. Nothing to do\n");
         print_usage(progname);
         goto out;
-    }
+    }*/
     for (size_t i = 0; i < len_mr_nums; i++) {
         if (mr_nums[i] >= MR_LEN) {
             printf("Invalid measurement register number %d\n", mr_nums[i]);
@@ -423,6 +427,20 @@ main(int argc, char *argv[])
         }
     }
 
+    if (calculate_mrtd(mrs[INDEX_MRTD], &evlog, ovmf, qemu_version)) {
+        printf("Failed to calculate event log for MRTD\n");
+        goto out;
+    }
+
+	if (calculate_rtmr(&mrs, &evlog, ovmf, &acpi_files,
+							secure_boot_path, pk_path, kek_path, db_path, dbx_path, smbios_path,
+							kernel, ramdisk, cmdline, boot_order, len_boot_order, bootxxxx, num_bootxxxx,
+							fwcfg_bootorder_path, fwcfg_bootmenu_path)) {
+        printf("Failed to calculate event log for RTMR 0\n");
+        goto out;
+	}
+
+	/*
     if (contains(mr_nums, len_mr_nums, INDEX_MRTD)) {
         if (calculate_mrtd(mrs[INDEX_MRTD], &evlog, ovmf, qemu_version)) {
             printf("Failed to calculate event log for MRTD\n");
@@ -431,19 +449,15 @@ main(int argc, char *argv[])
     }
 
     if (contains(mr_nums, len_mr_nums, INDEX_RTMR0)) {
-		//if (calculate_rtmr0(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files, ovmf_version,
-        //                    boot_order, len_boot_order, bootxxxx, num_bootxxxx,
-        //                    secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
-		if (calculate_rtmr0_ext(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files,
-								secure_boot_path, pk_path, kek_path, db_path, dbx_path, smbios_path,
-								kernel, ramdisk, cmdline, boot_order, len_boot_order, bootxxxx, num_bootxxxx,
-								fwcfg_bootorder_path, fwcfg_bootmenu_path)) {
-            printf("Failed to calculate event log for RTMR 0\n");
-            goto out;
+		if (calculate_rtmr0(mrs[INDEX_RTMR0], &evlog, ovmf, &acpi_files, ovmf_version,
+                            boot_order, len_boot_order, bootxxxx, num_bootxxxx,
+                            secure_boot_path, pk_path, kek_path, db_path, dbx_path)) {
+			printf("Failed to calculate event log for RTMR 0\n");
+			goto out;
 		}
-    }
+	}
 
-    if (contains(mr_nums, len_mr_nums, INDEX_RTMR1)) {
+	if (contains(mr_nums, len_mr_nums, INDEX_RTMR1)) {
         if (calculate_rtmr1(mrs[INDEX_RTMR1], &evlog, kernel, config_file, dump_kernel_path,
                             ovmf_version)) {
             printf("Failed to calculate event log for RTMR 1\n");
@@ -464,6 +478,7 @@ main(int argc, char *argv[])
             goto out;
         }
     }
+	*/
 
     // Print event log with all extend operations if requested
     if (print_event_log) {
@@ -527,8 +542,8 @@ main(int argc, char *argv[])
     ret = 0;
 
 out:
-    if (mr_nums)
-        free(mr_nums);
+    //if (mr_nums)
+    //    free(mr_nums);
     if (mr_str)
         free(mr_str);
     for (size_t i = 0; i < MR_LEN; i++) {
