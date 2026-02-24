@@ -260,32 +260,32 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 
 	// Measure system configuration table / TD HOB (1. EV_EFI_HANDOFF_TABLES2) and firmware blob (2. EV_EFI_PLATFORM_FIRMWARE_BLOB2)
 
-	rtmr_measure_tdhob(INDEX_RTMR0, &context);
+	rtmr_measure_tdhob(&config, &context);
 
-	rtmr_measure_cfv(INDEX_RTMR0, &context);
+	rtmr_measure_cfv(&config, &context);
 
 	// Measure ?? (3. EV_PLATFORM_CONFIG_FLAGS)
 
-	//rtmr_measure_qemu_fw_cfg(INDEX_RTMR0, &context);
-	rtmr_measure_qemu_fw_cfg_boot_menu(INDEX_RTMR0, &context);
-	rtmr_measure_qemu_fw_cfg_boot_order(INDEX_RTMR0, &context);
+	//rtmr_measure_qemu_fw_cfg(&config, &context);
+	rtmr_measure_qemu_fw_cfg_boot_menu(&config, &context);
+	rtmr_measure_qemu_fw_cfg_boot_order(&config, &context);
 
 	// Measure EFI secure boot variables (4.,5.,6.,7.,8. EV_EFI_VARIABLE_DRIVER_CONFIG)
 
-	rtmr_measure_secure_boot_variables(INDEX_RTMR0, &context);
+	rtmr_measure_secure_boot_variables(&config, &context);
 
 	// Measure separator (9. EV_SEPARATOR)
 
-	rtmr_measure_separator(INDEX_RTMR0, &context);
+	rtmr_measure_separator(&config, &context);
 
 	// Measure ACPI DATA(?) (10.,11.,12. EV_PLATFORM_CONFIG_FLAGS)
 	// TODO: Currently, the acpi tables are generated dynamically by qemu. The API for generation
 	// appears to be only internally available to QEMU. Thus, for now, the tables need to be dumped
 	// manually via the `acpidump` utility.
 
-	rtmr_measure_acpi_table_loader(INDEX_RTMR0, &context);
-	rtmr_measure_acpi_rsdp(INDEX_RTMR0, &context);
-	rtmr_measure_acpi_tables(INDEX_RTMR0, &context);
+	rtmr_measure_acpi_table_loader(&config, &context);
+	rtmr_measure_acpi_rsdp(&config, &context);
+	rtmr_measure_acpi_tables(&config, &context);
 
 	// Measure Smbios Table (13. EV_EFI_HANDOFF_TABLES)
 	// TODO: Same situation as with the ACPI tables. The smbios table can be dumped with `dmidecode`.
@@ -294,17 +294,17 @@ int calculate_rtmr0_ext(uint8_t *mr, eventlog_t *evlog, const char *ovmf_file_pa
 	config.mr_index = 1;
 	rtmr_measure_pe_kernel_image(&config, &context);
 	
-	rtmr_measure_smbios_table(INDEX_RTMR0, &context);
+	rtmr_measure_smbios_table(&config, &context);
 
 	// Measure EFI boot variables (14.,15.,16.,17.,18.,19.,20.,21. EFI_VARIABLE_BOOT)
 
-	rtmr_measure_efi_boot_vars(INDEX_RTMR0, &context);
+	rtmr_measure_efi_boot_vars(&config, &context);
 
 	config.mr_index = 1;
 	config.action_text = "Calling EFI Application from Boot Option";
 	rtmr_measure_action(&config, &context);
 
-	rtmr_measure_separator(INDEX_RTMR0, &context);
+	rtmr_measure_separator(&config, &context);
 
 	rtmr_measure_cmdline(&config, &context);
 

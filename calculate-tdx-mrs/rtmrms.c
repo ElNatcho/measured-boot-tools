@@ -19,19 +19,19 @@
 #include "mrtd.h"
 #include <time.h>
 
-int rtmr_measure_dummy(uint32_t mr_index, rtmrcontext_t *context) {
+int rtmr_measure_dummy(measurement_config_t *config, rtmrcontext_t *context) {
 	(void) context;
 	
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	memset(digest, 0, SHA384_DIGEST_LENGTH);
 
-	evlog_add(context->evlog, mr_index, "DUMMY Measurement", digest,
+	evlog_add(context->evlog, config->mr_index, "DUMMY Measurement", digest,
 		   "This is a dummy measurement, acting as a placeholder for a, yet, unknown measurement.");
 
 	return 0;
 }
 
-int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_tdhob(measurement_config_t *config, rtmrcontext_t *context)
 {
 	int ret = -1;
 
@@ -57,16 +57,16 @@ int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context)
     uint8_t hash_td_hob[SHA384_DIGEST_LENGTH];
     hash_buf(EVP_sha384(), hash_td_hob, td_hob, td_hob_size);
 
-	evlog_add(context->evlog, mr_index, "TD Hob", hash_td_hob,
+	evlog_add(context->evlog, config->mr_index, "TD Hob", hash_td_hob,
 		   "TD Hob passed from host VMM to guest firmware");
-	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_td_hob, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], hash_td_hob, SHA384_DIGEST_LENGTH);
 
 	free(ovmf_buf);
 
 	return -1;
 }
 
-int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_cfv(measurement_config_t *config, rtmrcontext_t *context)
 {
 	int ret = -1;
 
@@ -89,17 +89,17 @@ int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context)
 		printf("Failed to measure OVMF\n");
 	}
 
-	evlog_add(context->evlog, mr_index, "Configuration FV", hash_cfv,
+	evlog_add(context->evlog, config->mr_index, "Configuration FV", hash_cfv,
 		   "Configuration Firmware Volume");
     
-	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_cfv, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], hash_cfv, SHA384_DIGEST_LENGTH);
 
 	free(ovmf_buf);
 
 	return 0;
 }
 
-int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_qemu_fw_cfg(measurement_config_t *config, rtmrcontext_t *context)
 {
 	// Measures the configuration handed over by the QEMU firmware configuration (fw_cfg) device. The configuration
 	// list is constructed in EDK2 in QemuFwCfgCacheInit.c:ConstructCacheFwCfgList and the measured in
@@ -112,16 +112,16 @@ int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context)
 	uint8_t hash_fw_cfg[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), hash_fw_cfg, fw_cfg_buf, fw_cfg_size);
 
-	evlog_add(context->evlog, mr_index, "QEMU FW CFG", hash_fw_cfg,
+	evlog_add(context->evlog, config->mr_index, "QEMU FW CFG", hash_fw_cfg,
 		   "QEMU Firmware Configuration (fw_cfg) Device. (WARNING: Dummy implementation only"
 		   " capable of measuring a non existent fw_cfg device)");
 
-	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_fw_cfg, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], hash_fw_cfg, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_qemu_fw_cfg_boot_menu(uint32_t mr_index, rtmrcontext_t *context) {
+int rtmr_measure_qemu_fw_cfg_boot_menu(measurement_config_t *config, rtmrcontext_t *context) {
 	uint8_t *file_buf;
 	size_t file_size;
 	if(read_file(&file_buf, &file_size, context->fwcfg_bootmenu_file_path)) {
@@ -132,15 +132,15 @@ int rtmr_measure_qemu_fw_cfg_boot_menu(uint32_t mr_index, rtmrcontext_t *context
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), digest, file_buf, file_size);
 
-	evlog_add(context->evlog, mr_index, "QEMU FW CFG BootMenu", digest,
+	evlog_add(context->evlog, config->mr_index, "QEMU FW CFG BootMenu", digest,
 		   "QEMU FW CFG BootMenu Entry");
 
-	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_qemu_fw_cfg_boot_order(uint32_t mr_index, rtmrcontext_t *context) {
+int rtmr_measure_qemu_fw_cfg_boot_order(measurement_config_t *config, rtmrcontext_t *context) {
 	uint8_t *file_buf;
 	size_t file_size;
 	if(read_file(&file_buf, &file_size, context->fwcfg_bootorder_file_path)) {
@@ -151,15 +151,15 @@ int rtmr_measure_qemu_fw_cfg_boot_order(uint32_t mr_index, rtmrcontext_t *contex
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), digest, file_buf, file_size);
 
-	evlog_add(context->evlog, mr_index, "QEMU FW CFG BootOrder", digest,
+	evlog_add(context->evlog, config->mr_index, "QEMU FW CFG BootOrder", digest,
 		   "QEMU FW CFG BootOrder Entry");
 
-	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_secure_boot_variables(measurement_config_t *config, rtmrcontext_t *context)
 {
 	// TODO: In general, secure boot variables are stored in the NVRAM. Potentially determine secure
 	// boot variables automagically by parsing the NVRAM emulated by Qemu.
@@ -167,13 +167,13 @@ int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context
 	// However, to the best of our knowledge, qemu currently cannot emulate NVRAM, that is usable by
 	// EDK2. Thus, falling back on the default values / allowing the user to specify custom values
 	// should be sufficient at this point in time.
-	return measure_secure_boot_variables(EVP_sha384(), context->mrs[mr_index], mr_index, 
+	return measure_secure_boot_variables(EVP_sha384(), context->mrs[config->mr_index], config->mr_index, 
 									  context->evlog, context->secure_boot_vars.secure_boot_path,
 									  context->secure_boot_vars.pk_path, context->secure_boot_vars.kek_path,
 									  context->secure_boot_vars.db_path, context->secure_boot_vars.dbx_path);
 }
 
-int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_separator(measurement_config_t *config, rtmrcontext_t *context)
 {
 	// Measures the EV_SEPARATOR type event (see TCG PC Specific Implementation
 	// Specification, Ver. 1.21, Rev. 1.00, Sec. 11.3.1)
@@ -183,17 +183,17 @@ int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context)
 	uint8_t hash_separator[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), hash_separator, separator_buf, separator_size);
 
-	evlog_add(context->evlog, mr_index, "Separator", hash_separator,
+	evlog_add(context->evlog, config->mr_index, "Separator", hash_separator,
 		   "EV_SEPARATOR type event");
 
-	hash_extend(EVP_sha384(), context->mrs[mr_index], hash_separator, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], hash_separator, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context) 
+int rtmr_measure_acpi_data(measurement_config_t *config, rtmrcontext_t *context) 
 {
-	(void) mr_index;
+	(void) config;
 	(void) context;
 	// Process QemuFwCfgAcpi.c:InstallQemuFwCfgTables
 
@@ -204,7 +204,7 @@ int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context)
 	return -1;
 }
 
-int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_acpi_table_loader(measurement_config_t *config, rtmrcontext_t *context)
 {
 	if (!context->acpi.table_loader || context->acpi.table_loader_size <= 0) {
 		printf("ACPI table loader not set.\n");
@@ -213,14 +213,14 @@ int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context)
 
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), digest, context->acpi.table_loader, context->acpi.table_loader_size);
-	evlog_add(context->evlog, mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
+	evlog_add(context->evlog, config->mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
 		   "ACPI etc/table-loader");
-	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_acpi_rsdp(measurement_config_t *config, rtmrcontext_t *context)
 {
 	if (!context->acpi.acpi_rsdp || context->acpi.acpi_rsdp_size <= 0) {
 		printf("ACPI rsdp not set.\n");
@@ -229,14 +229,14 @@ int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context)
 
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), digest, context->acpi.acpi_rsdp, context->acpi.acpi_rsdp_size);
-	evlog_add(context->evlog, mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
+	evlog_add(context->evlog, config->mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
 		   "ACPI etc/acpi/rsdp");
-	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_acpi_tables(measurement_config_t *config, rtmrcontext_t *context)
 {
 	if (!context->acpi.acpi_tables || context->acpi.acpi_tables_size <= 0) {
 		printf("ACPI tables not set.\n");
@@ -245,14 +245,14 @@ int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context)
 
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), digest, context->acpi.acpi_tables, context->acpi.acpi_tables_size);
-	evlog_add(context->evlog, mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
+	evlog_add(context->evlog, config->mr_index, "EV_PLATFORM_CONFIG_FLAGS", digest,
 		   "ACPI etc/acpi/tables");
-	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	return 0;
 }
 
-int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_smbios_table(measurement_config_t *config, rtmrcontext_t *context)
 {
 	uint8_t *smbios_table;
 	size_t smbios_table_size;
@@ -264,20 +264,20 @@ int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context)
 	uint8_t digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), digest, smbios_table, smbios_table_size);
 
-	evlog_add(context->evlog, mr_index, "EV_EFI_HANDOFF_TABLES", digest,
+	evlog_add(context->evlog, config->mr_index, "EV_EFI_HANDOFF_TABLES", digest,
 		   "Smbios table");
-	hash_extend(EVP_sha384(), context->mrs[mr_index], digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], digest, SHA384_DIGEST_LENGTH);
 
 	free(smbios_table);
 
 	return 0;
 }
 
-int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context)
+int rtmr_measure_efi_boot_vars(measurement_config_t *config, rtmrcontext_t *context)
 {
 	// Could be used in theory, however, this function omits the first 4 bytes of the measured buffers to compensate for
 	// the prepened 4 bytes in the /sys/firmware/efi/efivars/* files.
-	//return calculate_efi_boot_vars(EVP_sha384(), context->mrs[mr_index], mr_index, context->evlog,
+	//return calculate_efi_boot_vars(EVP_sha384(), context->mrs[config->mr_index], config->mr_index, context->evlog,
 	//							context->boot_order, context->boot_order_size,
 	//							context->bootxxxx_list, context->num_bootxxxx);
 
@@ -286,9 +286,9 @@ int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context)
 	uint8_t boot_order_digest[SHA384_DIGEST_LENGTH];
 	hash_buf(EVP_sha384(), boot_order_digest, (uint8_t*)context->boot_order,
 		  context->num_boot_order * sizeof(*context->boot_order));
-	evlog_add(context->evlog, mr_index, "EV_EFI_VARIABLE_BOOT", boot_order_digest,
+	evlog_add(context->evlog, config->mr_index, "EV_EFI_VARIABLE_BOOT", boot_order_digest,
 		   "VariableName - BootOrder, VendorGuid - 8BE4DF61-93CA-11D2-AA0D-00E098032B8C");
-	hash_extend(EVP_sha384(), context->mrs[mr_index], boot_order_digest, SHA384_DIGEST_LENGTH);
+	hash_extend(EVP_sha384(), context->mrs[config->mr_index], boot_order_digest, SHA384_DIGEST_LENGTH);
 
 	uint8_t *file_buf = NULL;
 	size_t file_size = 0;
@@ -299,9 +299,9 @@ int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context)
 			return -1;
 		}
 		hash_buf(EVP_sha384(), file_digest, file_buf, file_size);
-		evlog_add(context->evlog, mr_index, "EV_EFI_VARIABLE_BOOT", file_digest,
+		evlog_add(context->evlog, config->mr_index, "EV_EFI_VARIABLE_BOOT", file_digest,
 			"VariableName - Boot####, VendorGuid - 8BE4DF61-93CA-11D2-AA0D-00E098032B8C");
-		hash_extend(EVP_sha384(), context->mrs[mr_index], file_digest, SHA384_DIGEST_LENGTH);
+		hash_extend(EVP_sha384(), context->mrs[config->mr_index], file_digest, SHA384_DIGEST_LENGTH);
 
 		free(file_buf);
 	}

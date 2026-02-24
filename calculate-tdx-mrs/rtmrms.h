@@ -47,21 +47,21 @@ typedef struct {
 	char* action_text;
 } measurement_config_t;
 
-int rtmr_measure_dummy(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_dummy(measurement_config_t *config, rtmrcontext_t *context);
 
-int rtmr_measure_tdhob(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_cfv(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_qemu_fw_cfg(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_qemu_fw_cfg_boot_menu(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_qemu_fw_cfg_boot_order(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_secure_boot_variables(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_separator(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_acpi_data(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_acpi_table_loader(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_acpi_rsdp(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_acpi_tables(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_smbios_table(uint32_t mr_index, rtmrcontext_t *context);
-int rtmr_measure_efi_boot_vars(uint32_t mr_index, rtmrcontext_t *context);
+int rtmr_measure_tdhob(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_cfv(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_qemu_fw_cfg(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_qemu_fw_cfg_boot_menu(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_qemu_fw_cfg_boot_order(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_secure_boot_variables(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_separator(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_acpi_data(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_acpi_table_loader(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_acpi_rsdp(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_acpi_tables(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_smbios_table(measurement_config_t *config, rtmrcontext_t *context);
+int rtmr_measure_efi_boot_vars(measurement_config_t *config, rtmrcontext_t *context);
 int rtmr_measure_action(measurement_config_t *config, rtmrcontext_t *context);
 int rtmr_measure_pe_kernel_image(measurement_config_t *config, rtmrcontext_t *context);
 int rtmr_measure_initrd_image(measurement_config_t *config, rtmrcontext_t *context);
