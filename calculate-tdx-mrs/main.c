@@ -30,6 +30,7 @@
 #include "mrtd.h"
 #include "efi_boot.h"
 #include "mrs.h"
+#include "quote.h"
 
 volatile bool debug_output = false;
 
@@ -46,6 +47,7 @@ print_usage(const char *progname)
     printf("\t-f,  --format <text|json>\tThe output format, can be either 'json' or 'text'\n");
     printf("\t-e,  --eventlog\t\t\tPrint detailed eventlog\n");
 	printf("\t     --cmpeventlog\t\t\tCompare digests of a existing eventlog to the detailed eventlog (requires -e)\n");
+	printf("\t	   --quote\t\t\ŧFile containing a quote to compare the calculated measurements to (currently only v4 supported)\n");
     printf("\t-s,  --summary\t\t\tPrint final MR values\n");
     printf("\t     --verbose\t\t\tPrint verbose debug output\n");
     printf("\t-c,  --config\t\t\tPath to configuration file\n");
@@ -107,6 +109,7 @@ main(int argc, char *argv[])
 	const char *smbios_path = NULL;
 	const char *fwcfg_bootorder_path = NULL;
 	const char *fwcfg_bootmenu_path = NULL;
+	const char *quote_file_path = NULL;
     uint16_t *boot_order = NULL;
     size_t len_boot_order = 0;
     char *boot_order_str;
@@ -307,6 +310,10 @@ main(int argc, char *argv[])
 				printf("Failed to load digests from %s\n", argv[1]);
 				goto out;
 			}
+			argv += 2;
+			argc -= 2;
+		} else if (!strcmp(argv[0], "--quote")) {
+			quote_file_path = argv[1];
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "--smbios")) {
@@ -540,6 +547,16 @@ main(int argc, char *argv[])
     }
 
     ret = 0;
+
+	if (quote_file_path) {
+		quote_t *quote = load_quote_from_file(quote_file_path);
+		if(!quote) {
+			printf("Failed to create quote\n");
+			ret -1;
+		} else {
+			check_quote(quote, mrs);
+		}
+	}
 
 out:
     //if (mr_nums)
