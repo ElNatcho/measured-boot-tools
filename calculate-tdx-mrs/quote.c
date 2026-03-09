@@ -1,6 +1,7 @@
 #include "quote.h"
 
 #include <string.h>
+#include <assert.h>
 
 #include "common.h"
 
@@ -67,10 +68,67 @@ void check_quote_measurements(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_
 	compare_measurements(quote->v4->body.mrseam_measurement, mrs[INDEX_MRSEAM]);
 }
 
-void check_quote_signature(quote_t* quote) {
-	printf("%d\n", quote->v4->signature_length);
-	for (size_t i = 0; i < quote->v4->signature_length; i++) {
-		printf("%c", ((char*)quote->v4->signature_data)[i]);
+static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
+
+	quote_v4_qe_report_cert_t* qe_report_cert = (quote_v4_qe_report_cert_t*)(&quote->sig_data.cert_data.data);
+
+	char* body_str = encode_hex((uint8_t*)&qe_report_cert->enclave_report_body, sizeof(quote_v4_enclave_report_body_t));
+	char* body_sig_str = encode_hex(qe_report_cert->signature, ECDSA_P256_SIG_SIZE);
+
+	printf("QE Report:%s\n", body_str);
+	printf("QE Report Signature: %s\n", body_sig_str);
+
+	quote_v4_qe_auth_data_t* auth_data;
+	auth_data = (quote_v4_qe_auth_data_t*)(&qe_report_cert->auth_and_cert_data);
+	char* auth_data_str = encode_hex((uint8_t*)&auth_data->data, auth_data->size);
+
+	printf("Auth Data (%d): %s\n", auth_data->size, auth_data_str);
+
+	quote_v4_cert_data_t* cert_data;
+	cert_data = (quote_v4_cert_data_t*)
+		((uint8_t*)(&qe_report_cert->auth_and_cert_data) + auth_data->size + sizeof(auth_data->size));
+
+	// This is expected in the v4 quote qe report certificate data -> see A.3.12
+	assert(cert_data->type == QUOTE_V4_CERT_TYPE_PCK_CERT_CHAIN);
+
+	printf("Certificate Chain: \n");
+	for(size_t i = 0; i < cert_data->size; i++) {
+		printf("%c", cert_data->data[i]);
 	}
 	printf("\n");
+
+}
+
+void check_quote_signature(quote_t* quote) {
+
+	// other versions are currently not implemented
+	assert(quote->version == 4);
+
+	char* signature_str = encode_hex(quote->v4->sig_data.signature, ECDSA_P256_SIG_SIZE);
+	char* attestation_key_str = encode_hex(quote->v4->sig_data.ecdsa_attestation_key, ECDSA_P256_SIG_SIZE);
+
+	printf("\n === Signature Verification ===\n");
+	printf("Signature            : %s\n", signature_str);
+	printf("ECDSA Attestation Key: %s\n", attestation_key_str);
+	printf("Cert Data Type=%d ", quote->v4->sig_data.cert_data.type);
+
+	switch(quote->v4->sig_data.cert_data.type) {
+		case QUOTE_V4_CERT_TYPE_PPID_PLAIN:			/* 1 */
+		case QUOTE_V4_CERT_TYPE_PPID_ENC_RSA2048:	/* 2 */
+		case QUOTE_V4_CERT_TYPE_PPID_ENC_RSA3072:	/* 3 */
+		case QUOTE_V4_CERT_TYPE_PCK_LEAF_PLAIN:		/* 4 */
+		case QUOTE_V4_CERT_TYPE_PCK_CERT_CHAIN:		/* 5 */
+		case QUOTE_V4_CERT_TYPE_PLAT_MANIFEST:		/* 7 */
+			printf("=> abort (currently not implemented)\n");
+			break;
+
+		case QUOTE_V4_CERT_TYPE_QE_REPORT_CERT:		/* 6 */
+			printf("=> QE Report Certification\n");
+			check_quote_v4_signature_qe_report_cert(quote->v4);
+			break;
+
+		default:
+			printf("=> abort (unkown type)\n");
+			break;
+	}
 }
