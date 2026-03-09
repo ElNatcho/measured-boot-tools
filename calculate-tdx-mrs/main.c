@@ -555,7 +555,8 @@ main(int argc, char *argv[])
 			printf("Failed to create quote\n");
 			ret -1;
 		} else {
-			check_quote(quote, mrs);
+			check_quote_measurements(quote, mrs);
+			check_quote_signature(quote);
 		}
 	}
 

@@ -52,7 +52,7 @@ static void compare_measurements(uint8_t quote_mr[SHA384_DIGEST_SIZE], uint8_t c
 	free(calc_mr_str);
 }
 
-void check_quote(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH]) {
+void check_quote_measurements(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH]) {
 	printf("================= MRTD =================\n");
 	compare_measurements(quote->v4->body.mrtd_measurement, mrs[INDEX_MRTD]);
 	printf("================= RTMR0 ================\n");
@@ -65,4 +65,12 @@ void check_quote(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH]) {
 	compare_measurements(quote->v4->body.rtmr3_measurement, mrs[INDEX_RTMR3]);
 	printf("================= MRSEAM ===============\n");
 	compare_measurements(quote->v4->body.mrseam_measurement, mrs[INDEX_MRSEAM]);
+}
+
+void check_quote_signature(quote_t* quote) {
+	printf("%d\n", quote->v4->signature_length);
+	for (size_t i = 0; i < quote->v4->signature_length; i++) {
+		printf("%c", ((char*)quote->v4->signature_data)[i]);
+	}
+	printf("\n");
 }

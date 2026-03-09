@@ -49,7 +49,7 @@ typedef struct {
 	quote_header_t header;
 	quote_v4_body_t body;
 	uint32_t signature_length;
-	uint8_t *signature_data;
+	uint8_t signature_data[];
 } __attribute__((packed)) quote_v4_t;
 
 typedef struct {
@@ -63,4 +63,5 @@ typedef struct {
 } quote_t;
 
 quote_t* load_quote_from_file(const char* quote_file_path);
-void check_quote(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH]);
+void check_quote_measurements(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH]);
+void check_quote_signature(quote_t* quote);
