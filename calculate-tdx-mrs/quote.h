@@ -45,11 +45,27 @@ typedef struct {
 
 } __attribute__((packed)) quote_v4_body_t;
 
+#define QUOTE_V4_CERT_TYPE_PPID_PLAIN			1
+#define QUOTE_V4_CERT_TYPE_PPID_ENC_RSA2048		2
+#define QUOTE_V4_CERT_TYPE_PPID_ENC_RSA3072		3
+#define QUOTE_V4_CERT_TYPE_PCK_LEAF_PLAIN		4
+#define QUOTE_V4_CERT_TYPE_PCK_CERT_CHAIN		5
+#define QUOTE_V4_CERT_TYPE_QE_REPORT_CERT		6
+#define QUOTE_V4_CERT_TYPE_PLAT_MANIFEST		7
+
+typedef struct {
+	uint16_t type;
+	uint32_t size;
+	uint8_t data[];
+} __attribute__((packed)) quote_v4_cert_data_t;
+
 typedef struct {
 	quote_header_t header;
 	quote_v4_body_t body;
-	uint32_t signature_length;
-	uint8_t signature_data[];
+	uint32_t signature_data_length;
+	uint8_t signature[64];
+	uint8_t ecdsa_attestation_key[64];
+	quote_v4_cert_data_t cert_data;
 } __attribute__((packed)) quote_v4_t;
 
 typedef struct {
