@@ -30,6 +30,7 @@ CSRS := \
 	mrs.c \
 	rtmrms.c \
 	quote.c \
+	signature.c \
 	../thirdparty/edk2/MeasureBootPeCoff.c \
 	../thirdparty/edk2/SecMain.c \
 	../thirdparty/LzmaCustomDecompressLib/LzmaDecompress.c \

@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "common.h"
+#include "signature.h"
 
 static char *
 encode_hex(const uint8_t *bin, int length)
@@ -41,12 +42,12 @@ static void compare_measurements(uint8_t quote_mr[SHA384_DIGEST_SIZE], uint8_t c
 	char* quote_mr_str = encode_hex(quote_mr, SHA384_DIGEST_SIZE);
 	char* calc_mr_str = encode_hex(calc_mr, SHA384_DIGEST_SIZE);
 
-	printf("Quote:%s\nCalc :%s", quote_mr_str, calc_mr_str);
+	printf("Quote:%s\nCalc :%s ", quote_mr_str, calc_mr_str);
 
 	if (strcmp(quote_mr_str, calc_mr_str) == 0) {
-		printf("(\x1B[32mMatch\x1B[37m)\n");
+		printf("(%sMatch%s)\n", TTY_GREEN, TTY_WHITE);
 	} else {
-		printf("(\x1B[31mMismatch\x1B[37m)\n");
+		printf("(%sMismatch%s)\n", TTY_RED, TTY_WHITE);
 	}
 
 	free(quote_mr_str);
@@ -108,7 +109,17 @@ void check_quote_signature(quote_t* quote) {
 	char* attestation_key_str = encode_hex(quote->v4->sig_data.ecdsa_attestation_key, ECDSA_P256_SIG_SIZE);
 
 	printf("\n === Signature Verification ===\n");
-	printf("Signature            : %s\n", signature_str);
+	printf("Signature            : %s ", signature_str);
+
+	int ret = sig_check_quote_v4_signature(quote->v4);
+	if (ret == 1) { /* success */
+		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+	} else  if (ret == 0) {	/* signature not valid */
+		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+	} else {
+		printf("\n=> Openssl Error: %d\n", ret);
+	}
+
 	printf("ECDSA Attestation Key: %s\n", attestation_key_str);
 	printf("Cert Data Type=%d ", quote->v4->sig_data.cert_data.type);
 
