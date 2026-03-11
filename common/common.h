@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <uchar.h>
 
+#define TTY_WHITE "\x1B[37m"
+#define TTY_RED "\x1B[31m"
+#define TTY_GREEN "\x1B[32m"
+
 #define ASSERT(expr)                                                                               \
     if (!(expr)) {                                                                                 \
         printf("%s:%d %s: Assertion %s failed\n", __FILE__, __LINE__, __func__, #expr);            \

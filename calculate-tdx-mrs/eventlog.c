@@ -138,6 +138,7 @@ evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, co
 
 			char *cmphashstr;
 			char *matchstr;
+			char *colorstr;
 
 			assert(evlog->compare_digest_list_count >= evlog->compare_digest_list_offset);
 
@@ -149,9 +150,11 @@ evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, co
 
 				// TODO: color mode disable
 				if (strcmp(cmphashstr, hashstr) == 0) {
-					matchstr = "(\x1B[32mMatch\x1B[37m)";
+					matchstr = "Match";
+					colorstr = TTY_GREEN;
 				} else {
-					matchstr = "(\x1B[31mMismatch\x1B[37m)";
+					matchstr = "Mismatch";
+					colorstr = TTY_RED;
 				}
 
 				evlog->compare_digest_list_offset += 1;
@@ -161,9 +164,9 @@ evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, co
 						  "subtype: %s"
 						  "\n\tindex: %d"
 						  "\n\tsha384    : %s"
-						  "\n\tcmp-sha384: %s %s"
+						  "\n\tcmp-sha384: %s (%s%s%s)"
 	                      "\n\tdescription: %s: %s\n",
-			              name, index, hashstr, cmphashstr, matchstr, index_to_mr(index), desc);
+			              name, index, hashstr, cmphashstr, colorstr, matchstr, TTY_WHITE, index_to_mr(index), desc);
 		} else {
 		    ret = snprintf(s, sizeof(s),
 						   "subtype: %s"
