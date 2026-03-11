@@ -6,18 +6,6 @@
 #include "common.h"
 #include "signature.h"
 
-static char *
-encode_hex(const uint8_t *bin, int length)
-{
-    size_t len = length * 2 + 1;
-    char *hex = calloc(len, 1);
-    for (int i = 0; i < length; ++i) {
-        // snprintf writes a '0' byte
-        snprintf(hex + i * 2, 3, "%.2x", bin[i]);
-    }
-    return hex;
-}
-
 quote_t* load_quote_from_file(const char* quote_file_path) {
 
 	quote_t *quote = malloc(sizeof(quote_t));

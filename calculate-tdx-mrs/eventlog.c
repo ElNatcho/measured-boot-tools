@@ -35,18 +35,6 @@ index_to_mr(uint32_t index)
     }
 }
 
-static char *
-encode_hex(const uint8_t *bin, int length)
-{
-    size_t len = length * 2 + 1;
-    char *hex = calloc(len, 1);
-    for (int i = 0; i < length; ++i) {
-        // snprintf writes a '0' byte
-        snprintf(hex + i * 2, 3, "%.2x", bin[i]);
-    }
-    return hex;
-}
-
 int load_compare_digest_list(eventlog_t *evlog, const char *path)
 {
 	int ret = -1;
