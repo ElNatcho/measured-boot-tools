@@ -61,31 +61,22 @@ static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 
 	quote_v4_qe_report_cert_t* qe_report_cert = (quote_v4_qe_report_cert_t*)(&quote->sig_data.cert_data.data);
 
-	char* body_str = encode_hex((uint8_t*)&qe_report_cert->enclave_report_body, sizeof(quote_v4_enclave_report_body_t));
 	char* body_sig_str = encode_hex(qe_report_cert->signature, ECDSA_P256_SIG_SIZE);
 
-	printf("QE Report:%s\n", body_str);
-	printf("QE Report Signature: %s\n", body_sig_str);
+	printf("QE Report Signature: %s ", body_sig_str);
 
-	quote_v4_qe_auth_data_t* auth_data;
-	auth_data = (quote_v4_qe_auth_data_t*)(&qe_report_cert->auth_and_cert_data);
-	char* auth_data_str = encode_hex((uint8_t*)&auth_data->data, auth_data->size);
-
-	printf("Auth Data (%d): %s\n", auth_data->size, auth_data_str);
-
-	quote_v4_cert_data_t* cert_data;
-	cert_data = (quote_v4_cert_data_t*)
-		((uint8_t*)(&qe_report_cert->auth_and_cert_data) + auth_data->size + sizeof(auth_data->size));
-
-	// This is expected in the v4 quote qe report certificate data -> see A.3.12
-	assert(cert_data->type == QUOTE_V4_CERT_TYPE_PCK_CERT_CHAIN);
-
-	printf("Certificate Chain: \n");
-	for(size_t i = 0; i < cert_data->size; i++) {
-		printf("%c", cert_data->data[i]);
+	int ret = sig_check_quote_v4_enclave_report_signature(qe_report_cert);
+	if (ret == 1) { /* success */
+		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+	} else if (ret == 0) { /* signature not valid */
+		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+	} else {
+		printf("(%sverification failed%s)\n=> Openssl Error: %d\n", TTY_RED, TTY_WHITE, ret);
 	}
-	printf("\n");
 
+	char* qe_report_data_str = encode_hex(qe_report_cert->enclave_report_body.reportdata, QUOTE_V4_EPB_REPORT_DATA_SIZE);
+
+	printf("QE Report Cert     : %s\n", qe_report_data_str);
 }
 
 void check_quote_signature(quote_t* quote) {
@@ -97,7 +88,7 @@ void check_quote_signature(quote_t* quote) {
 	char* attestation_key_str = encode_hex(quote->v4->sig_data.ecdsa_attestation_key, ECDSA_P256_SIG_SIZE);
 
 	printf("\n === Signature Verification ===\n");
-	printf("Signature            : %s ", signature_str);
+	printf("Quote Signature      : %s ", signature_str);
 
 	int ret = sig_check_quote_v4_signature(quote->v4);
 	if (ret == 1) { /* success */
@@ -105,7 +96,7 @@ void check_quote_signature(quote_t* quote) {
 	} else  if (ret == 0) {	/* signature not valid */
 		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
 	} else {
-		printf("\n=> Openssl Error: %d\n", ret);
+		printf("(%sverification failed%s)\n=> Openssl Error: %d\n", TTY_RED, TTY_WHITE, ret);
 	}
 
 	printf("ECDSA Attestation Key: %s\n", attestation_key_str);

@@ -2,14 +2,19 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <sys/types.h>
 
 #include <openssl/evp.h>
 #include <openssl/param_build.h>
 #include <openssl/core_names.h>
 #include <openssl/ecdsa.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/bn.h>
+
+#include "common.h"
 
 static EVP_PKEY* load_raw_ecdsa_p256_pk(const uint8_t* raw_key_64) {
     EVP_PKEY *pkey = NULL;
@@ -80,7 +85,7 @@ cleanup:
 
 // input: raw_sig (64 bytes)
 // output: der_sig (buffer of at least 72 bytes)
-int signature_ecdsa_p256_convert_raw_to_der(const uint8_t  *raw_sig, uint8_t *der_sig) {
+static int signature_ecdsa_p256_convert_raw_to_der(const uint8_t  *raw_sig, uint8_t *der_sig) {
     int der_len = 0;
     
     // create a signature object
@@ -109,7 +114,6 @@ int signature_ecdsa_p256_convert_raw_to_der(const uint8_t  *raw_sig, uint8_t *de
 }
 
 int sig_check_quote_v4_signature(quote_v4_t* quote) {
-
 	EVP_PKEY* pk = load_raw_ecdsa_p256_pk(quote->sig_data.ecdsa_attestation_key);
 
 	const uint8_t der_sig_buf_size = 72;
@@ -132,6 +136,131 @@ int sig_check_quote_v4_signature(quote_v4_t* quote) {
 		ERR_error_string_n(err, err_buf, sizeof(err_buf));
 		fprintf(stderr, "OpenSSL Error: %s\n", err_buf);
 	}
+
+	return ret;
+}
+
+// This function parses a PEM string into a stack of X509 pointers
+static STACK_OF(X509)* parse_pem_chain(const uint8_t* pem_data, const size_t pem_data_size) {
+    STACK_OF(X509) *chain = sk_X509_new_null();
+    BIO *bio = BIO_new_mem_buf(pem_data, pem_data_size);
+    
+    X509 *cert = NULL;
+    // PEM_read_bio_X509 reads one cert at a time and advances the BIO cursor
+    while ((cert = PEM_read_bio_X509(bio, NULL, NULL, NULL)) != NULL) {
+        sk_X509_push(chain, cert);
+    }
+
+    BIO_free(bio);
+    
+    // always check if we actually found certificates
+    if (sk_X509_num(chain) == 0) {
+        sk_X509_free(chain);
+        return NULL;
+    }
+    return chain;
+}
+
+static int verify_pck_chain(X509 *target_cert, X509 *intermediate_cert, X509 *root_cert) {
+    X509_STORE *store = NULL;
+    X509_STORE_CTX *ctx = NULL;
+    STACK_OF(X509) *untrusted_stack = NULL;
+    int ret = 0;
+
+    // create the store and add the trusted Root
+    store = X509_STORE_new();
+    X509_STORE_add_cert(store, root_cert);
+
+    // create a stack for intermediate certificates
+    untrusted_stack = sk_X509_new_null();
+    sk_X509_push(untrusted_stack, intermediate_cert);
+
+    // initialize the verification context
+    ctx = X509_STORE_CTX_new();
+    if (!X509_STORE_CTX_init(ctx, store, target_cert, untrusted_stack)) {
+		fprintf(stderr, "[%s] X509_STORE_CTX_init failed\n", __func__);
+        goto cleanup;
+    }
+
+    // perform the verification
+    // returns 1 for success, 0 for failure, < 0 for internal error
+    ret = X509_verify_cert(ctx);
+
+    if (ret < 0) {
+        int err = X509_STORE_CTX_get_error(ctx);
+        fprintf(stderr, "[%s] Verification failed: %s\n", __func__, X509_verify_cert_error_string(err));
+    }
+
+cleanup:
+    sk_X509_free(untrusted_stack);
+    X509_STORE_CTX_free(ctx);
+    X509_STORE_free(store);
+    return ret;
+}
+
+int sig_check_quote_v4_enclave_report_signature(quote_v4_qe_report_cert_t* qe_report_cert) {
+	int ret = -1;
+
+	const uint8_t der_sig_buf_size = 72;
+	uint8_t der_sig[der_sig_buf_size];
+	
+	//
+	//	Fetch the QE Authentication Data and QE Certification Data from the QE Report
+
+	quote_v4_qe_auth_data_t* auth_data;
+	auth_data = (quote_v4_qe_auth_data_t*)(&qe_report_cert->auth_and_cert_data);
+
+	quote_v4_cert_data_t* cert_data;
+	cert_data = (quote_v4_cert_data_t*)
+		((uint8_t*)(&qe_report_cert->auth_and_cert_data) + auth_data->size + sizeof(auth_data->size));
+
+	// This is expected in the v4 quote qe report certificate data -> see A.3.12
+	assert(cert_data->type == QUOTE_V4_CERT_TYPE_PCK_CERT_CHAIN);
+
+	//
+	//	Parse the PCK Certificate Chain from the qe certificate data and verify the chain
+
+	STACK_OF(X509)* chain = parse_pem_chain((uint8_t*)&cert_data->data, cert_data->size);
+
+	// according to the specification, the pem chain consists of (Leaf Cert || Intermediate CA Cert || Root CA Cert)
+	if ((ret = sk_X509_num(chain)) != 3) {
+		fprintf(stderr, "[%s] size of chain does not equal to 3: %d\n", __func__, ret);
+		ret = -1;
+		goto cleanup;
+	}
+
+	if (verify_pck_chain(sk_X509_value(chain, 0), sk_X509_value(chain, 1), sk_X509_value(chain, 2)) <= 0) {
+		printf("PCK cert chain verification failed");
+		goto cleanup;
+	}
+
+	//
+	// Parse the QE Report Signature and convert it to DER format
+
+	ssize_t der_sig_size = signature_ecdsa_p256_convert_raw_to_der(
+		(uint8_t*)&qe_report_cert->signature, (uint8_t*)&der_sig);
+
+	if (der_sig_size <= 0) {
+		fprintf(stderr, "[%s] converting signature to der format failed: size=%ld\n", __func__, der_sig_size);
+		goto cleanup;
+	}
+
+	//
+	// Extract public key from leaf certificate and use it to verify the signature
+	
+	EVP_PKEY *pk = X509_get_pubkey(sk_X509_value(chain,0));
+	if (!pk) {
+		fprintf(stderr, "[%s] failed to get public key from x509 leaf cert\n", __func__);
+		goto cleanup;
+	}
+
+	ret = verify_ecdsa_p256_signature(pk, (uint8_t*)&qe_report_cert->enclave_report_body,
+										sizeof(qe_report_cert->enclave_report_body),
+										der_sig, der_sig_size);
+
+cleanup:
+
+	sk_X509_pop_free(chain, X509_free);
 
 	return ret;
 }
