@@ -47,7 +47,7 @@ print_usage(const char *progname)
     printf("\t-f,  --format <text|json>\tThe output format, can be either 'json' or 'text'\n");
     printf("\t-e,  --eventlog\t\t\tPrint detailed eventlog\n");
 	printf("\t     --cmpeventlog\t\t\tCompare digests of a existing eventlog to the detailed eventlog (requires -e)\n");
-	printf("\t	   --quote\t\t\ŧFile containing a quote to compare the calculated measurements to (currently only v4 supported)\n");
+	printf("\t	   --quote\t\t\tFile containing a quote to compare the calculated measurements to (currently only v4 supported)\n");
     printf("\t-s,  --summary\t\t\tPrint final MR values\n");
     printf("\t     --verbose\t\t\tPrint verbose debug output\n");
     printf("\t-c,  --config\t\t\tPath to configuration file\n");
@@ -553,7 +553,7 @@ main(int argc, char *argv[])
 		quote_t *quote = load_quote_from_file(quote_file_path);
 		if(!quote) {
 			printf("Failed to create quote\n");
-			ret -1;
+			ret = -1;
 		} else {
 			check_quote_measurements(quote, mrs);
 			check_quote_signature(quote);
