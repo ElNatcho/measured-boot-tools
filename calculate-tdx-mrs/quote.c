@@ -79,7 +79,7 @@ static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 	quote_v4_qe_auth_data_t* auth_data = (quote_v4_qe_auth_data_t*)(&qe_report_cert->auth_and_cert_data);
 	char* auth_data_str = encode_hex((uint8_t*)auth_data, auth_data->size + sizeof(auth_data->size));
 
-	printf("QE Authentication Data       : %s\n", auth_data_str);
+	//printf("QE Authentication Data       : %s\n", auth_data_str);
 	printf("QE Report Authentication Data: %s ", qe_report_data_str);
 
 	if (sig_check_attestation_key_hash(&quote->sig_data, qe_report_cert) == 1) { /* valid hash */
