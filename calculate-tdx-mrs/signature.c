@@ -264,3 +264,34 @@ cleanup:
 
 	return ret;
 }
+
+// see `gen_att_key` in quote_enclave_tdqe.cpp https://github.com/intel/confidential-computing.tee.dcap/blob/e90159735b0467202abd54737486af4d9348a8db/ae/tdqe/quoting_enclave_tdqe.cpp#L775 
+int sig_check_attestation_key_hash(quote_v4_signature_data_t* sig, quote_v4_qe_report_cert_t* qe_report_cert) {
+	EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+	uint8_t hash[QUOTE_V4_EPB_REPORT_DATA_SIZE];
+	unsigned int hash_length = 0;
+	
+	memset(hash, 0, QUOTE_V4_EPB_REPORT_DATA_SIZE);
+
+	EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
+
+	EVP_DigestUpdate(ctx, sig->ecdsa_attestation_key, ECDSA_P256_SIG_SIZE);
+
+	// Concat authentication data like https://github.com/intel/confidential-computing.tee.dcap/blob/e90159735b0467202abd54737486af4d9348a8db/QuoteGeneration/quote_wrapper/tdx_quote/td_ql_logic.cpp#L1385-L1388
+	const size_t auth_data_size = 0x20;
+	uint8_t authentication_data[ /* auth_data_size */ ] =
+               {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f,
+                0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f};
+
+	EVP_DigestUpdate(ctx, authentication_data, auth_data_size);
+
+	EVP_DigestFinal_ex(ctx, hash, &hash_length);
+
+	assert(hash_length < QUOTE_V4_EPB_REPORT_DATA_SIZE);
+
+	for (size_t i = 0; i < QUOTE_V4_EPB_REPORT_DATA_SIZE; i++) {
+		if (hash[i] != qe_report_cert->enclave_report_body.reportdata[i]) return 0;
+	}
+
+	return 1;
+}

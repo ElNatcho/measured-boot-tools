@@ -67,7 +67,7 @@ static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 
 	int ret = sig_check_quote_v4_enclave_report_signature(qe_report_cert);
 	if (ret == 1) { /* success */
-		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+		printf("(%svalid%s)\n\t=>QE Report is authentic\n\n", TTY_GREEN, TTY_WHITE);
 	} else if (ret == 0) { /* signature not valid */
 		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
 	} else {
@@ -76,7 +76,17 @@ static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 
 	char* qe_report_data_str = encode_hex(qe_report_cert->enclave_report_body.reportdata, QUOTE_V4_EPB_REPORT_DATA_SIZE);
 
-	printf("QE Report Cert     : %s\n", qe_report_data_str);
+	quote_v4_qe_auth_data_t* auth_data = (quote_v4_qe_auth_data_t*)(&qe_report_cert->auth_and_cert_data);
+	char* auth_data_str = encode_hex((uint8_t*)auth_data, auth_data->size + sizeof(auth_data->size));
+
+	printf("QE Authentication Data       : %s\n", auth_data_str);
+	printf("QE Report Authentication Data: %s ", qe_report_data_str);
+
+	if (sig_check_attestation_key_hash(&quote->sig_data, qe_report_cert) == 1) { /* valid hash */
+		printf("(%svalid%s)\n\t=>(SHA256(Attestation Key || Auth-Data) || 32 time 0x0) valid, therefore the Attestation Key was generated within this QE\n\n", TTY_GREEN, TTY_WHITE);
+	} else {
+		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+	}
 }
 
 void check_quote_signature(quote_t* quote) {
@@ -88,18 +98,18 @@ void check_quote_signature(quote_t* quote) {
 	char* attestation_key_str = encode_hex(quote->v4->sig_data.ecdsa_attestation_key, ECDSA_P256_SIG_SIZE);
 
 	printf("\n === Signature Verification ===\n");
+	printf("ECDSA Attestation Key: %s\n", attestation_key_str);
 	printf("Quote Signature      : %s ", signature_str);
 
 	int ret = sig_check_quote_v4_signature(quote->v4);
 	if (ret == 1) { /* success */
-		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+		printf("(%svalid%s)\n\t=>Quote Header and Body are signed with the Attestation Key and authentic\n\n", TTY_GREEN, TTY_WHITE);
 	} else  if (ret == 0) {	/* signature not valid */
 		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
 	} else {
 		printf("(%sverification failed%s)\n=> Openssl Error: %d\n", TTY_RED, TTY_WHITE, ret);
 	}
 
-	printf("ECDSA Attestation Key: %s\n", attestation_key_str);
 	printf("Cert Data Type=%d ", quote->v4->sig_data.cert_data.type);
 
 	switch(quote->v4->sig_data.cert_data.type) {
