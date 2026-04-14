@@ -57,6 +57,41 @@ void check_quote_measurements(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_
 	compare_measurements(quote->v4->body.mrseam_measurement, mrs[INDEX_MRSEAM]);
 }
 
+static int check_quote_v4_qe_identity(quote_v4_qe_report_cert_t *report) {
+	int ret = 0;
+	char* mrsigner_str = encode_hex(report->enclave_report_body.mrsigner, QUOTE_V4_EPB_MRSIGNER_SIZE);	
+	char* isvprodid_str = encode_hex((uint8_t*)&report->enclave_report_body.isv_prodid,
+									sizeof(report->enclave_report_body.isv_prodid));
+	char* miscselect_str = encode_hex((uint8_t*)&report->enclave_report_body.miscselect,
+									sizeof(report->enclave_report_body.miscselect));
+	char* attributes_str = encode_hex(report->enclave_report_body.attributes, QUOTE_V4_EPB_ATTRIBUTES_SIZE);
+	char* isvsvn_str = encode_hex((uint8_t*)&report->enclave_report_body.isv_svn,
+									sizeof(report->enclave_report_body.isv_svn));
+
+	printf("Checking mrsigner: %s ", mrsigner_str);
+	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+
+	printf("Checking isv-prod-id: %s ", isvprodid_str);
+	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+
+	printf("Checking miscselect: %s ", miscselect_str);
+	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+
+	printf("Checking attributes: %s ", attributes_str);
+	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+
+	printf("Checking isv-svn: %s ", isvsvn_str);
+	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+
+	free(mrsigner_str);
+	free(isvprodid_str);
+	free(miscselect_str);
+	free(attributes_str);
+	free(isvsvn_str);
+
+	return ret;
+}
+
 static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 
 	quote_v4_qe_report_cert_t* qe_report_cert = (quote_v4_qe_report_cert_t*)(&quote->sig_data.cert_data.data);
@@ -86,6 +121,17 @@ static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 	} else {
 		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
 	}
+
+	printf("Checking QE Identity:\n");
+	if (check_quote_v4_qe_identity(qe_report_cert) <= 0) {
+		printf("\t=> QE Identity %sinvalid%s\n", TTY_RED, TTY_WHITE);
+	} else {
+		printf("\t=> QE Identity %svalid%s\n", TTY_GREEN, TTY_WHITE);
+	}
+
+	free(body_sig_str);
+	free(qe_report_data_str);
+	free(auth_data_str);
 }
 
 void check_quote_signature(quote_t* quote) {
@@ -130,4 +176,7 @@ void check_quote_signature(quote_t* quote) {
 			printf("=> abort (unkown type)\n");
 			break;
 	}
+
+	free(signature_str);
+	free(attestation_key_str);
 }
