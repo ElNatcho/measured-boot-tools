@@ -63,9 +63,8 @@ static void check_quote_v4_signature_qe_report_cert(quote_v4_t* quote) {
 
 	char* body_sig_str = encode_hex(qe_report_cert->signature, ECDSA_P256_SIG_SIZE);
 
-	printf("QE Report Signature: %s ", body_sig_str);
-
 	int ret = sig_check_quote_v4_enclave_report_signature(qe_report_cert);
+	printf("\nQE Report Signature: %s ", body_sig_str);
 	if (ret == 1) { /* success */
 		printf("(%svalid%s)\n\t=>QE Report is authentic\n\n", TTY_GREEN, TTY_WHITE);
 	} else if (ret == 0) { /* signature not valid */

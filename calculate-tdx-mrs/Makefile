@@ -3,6 +3,8 @@ DEBUG_BUILD ?= n
 
 LOCAL_CFLAGS := -g -std=gnu99 -ftrapv
 LOCAL_CFLAGS += -Wall -Wextra -Wcast-align -Wformat -Wformat-security -Wno-deprecated-declarations
+LOCAL_CFLAGS += -lcurl
+#LOCAL_CFLAGS += -llibcurl
 
 DEFINES :=
 

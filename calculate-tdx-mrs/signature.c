@@ -1,9 +1,12 @@
 #include "signature.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <sys/types.h>
+
+#include <curl/curl.h>
 
 #include <openssl/evp.h>
 #include <openssl/param_build.h>
@@ -58,7 +61,7 @@ static int verify_ecdsa_p256_signature(EVP_PKEY *pub_key, const uint8_t *data, s
 
     if (!ctx) {
 		fprintf(stderr, "[%s] unable to create ctx\n", __func__);
-        return -1; // Memory allocation error
+        return -1; // download_data_t allocation error
     }
 
     // Use the EVP_PKEY_verify series for raw hashes, or EVP_DigestVerify for data
@@ -198,6 +201,128 @@ cleanup:
     return ret;
 }
 
+typedef struct {
+    char *data;
+    size_t size;
+} download_data_t;
+
+size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
+    size_t real_size = size * nmemb;
+    download_data_t *mem = (download_data_t*)userp;
+
+    char *ptr = realloc(mem->data, mem->size + real_size + 1);
+    if (!ptr) {
+        fprintf(stderr, "Not enough memory\n");
+        return 0; // abort transfer
+    }
+
+    mem->data = ptr;
+    memcpy(&(mem->data[mem->size]), contents, real_size);
+    mem->size += real_size;
+    mem->data[mem->size] = '\0'; // null-terminate (useful for text)
+
+    return real_size;
+}
+
+int download_to_memory(const char *url, download_data_t *out) {
+    CURL *curl;
+    CURLcode res;
+
+    out->data = malloc(1);  // will grow as needed
+    out->size = 0;
+
+    curl = curl_easy_init();
+    if (!curl) {
+        fprintf(stderr, "curl init failed\n");
+        return 1;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+    res = curl_easy_perform(curl);
+
+    if (res != CURLE_OK) {
+        fprintf(stderr, "Download failed: %s\n", curl_easy_strerror(res));
+        curl_easy_cleanup(curl);
+        free(out->data);
+        return 1;
+    }
+
+    curl_easy_cleanup(curl);
+    return 0;
+}
+
+int x509_equals(X509 *a, X509 *b) {
+    if (!a || !b) return 0;
+
+    unsigned char *buf_a = NULL;
+    unsigned char *buf_b = NULL;
+
+    int len_a = i2d_X509(a, &buf_a);
+    int len_b = i2d_X509(b, &buf_b);
+
+    if (len_a < 0 || len_b < 0) {
+        OPENSSL_free(buf_a);
+        OPENSSL_free(buf_b);
+        return 0;
+    }
+
+    int result = 0;
+
+    if (len_a == len_b && memcmp(buf_a, buf_b, len_a) == 0) {
+        result = 1; // equal
+    }
+
+    OPENSSL_free(buf_a);
+    OPENSSL_free(buf_b);
+
+    return result;
+}
+
+int verify_root_ca_cert(X509* report_root_ca_cert) {
+	int ret = -1;
+	download_data_t download_cert;
+	const char* root_ca_url = "https://certificates.trustedservices.intel.com/Intel_SGX_Provisioning_Certification_RootCA.pem"; 
+
+	printf("\nFetching root ca cert from: %s\n", root_ca_url);
+
+	download_to_memory(root_ca_url, &download_cert);
+
+	BIO *bio = BIO_new_mem_buf(download_cert.data, download_cert.size);
+
+	X509 *intel_root_ca_cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+	if (!intel_root_ca_cert) {
+		fprintf(stderr, "Unable to parse intel root ca cert:\n");
+		for(size_t i = 0; i < download_cert.size; i++) {
+			fprintf(stderr, "%02x", download_cert.data[i]);
+		}
+		fprintf(stderr, "\n");
+		goto cleanup;
+	}
+
+	if (!x509_equals(report_root_ca_cert, intel_root_ca_cert)) {
+		fprintf(stderr, "Intel root ca and report root ca cert do no match!\n");
+		fprintf(stderr, "Intel root ca cert:\n");
+		for(size_t i = 0; i < download_cert.size; i++) {
+			fprintf(stderr, "%c", download_cert.data[i]);
+		}
+		fprintf(stderr, "\n");
+	} else {
+		ret = 1;
+	}
+
+	X509_free(intel_root_ca_cert);
+
+cleanup:
+	BIO_free(bio);
+	free(download_cert.data);
+
+	return ret;
+}
+
 int sig_check_quote_v4_enclave_report_signature(quote_v4_qe_report_cert_t* qe_report_cert) {
 	int ret = -1;
 
@@ -234,6 +359,12 @@ int sig_check_quote_v4_enclave_report_signature(quote_v4_qe_report_cert_t* qe_re
 		goto cleanup;
 	}
 
+	if (verify_root_ca_cert(sk_X509_value(chain, 2)) <= 0) {
+		printf("\t=> Report Root CA Certificate %sinvalid%s.\n", TTY_RED, TTY_WHITE);
+		goto cleanup;
+	} else {
+		printf("\t=> Report Root CA Certificate %svalid%s.\n", TTY_GREEN, TTY_WHITE);
+	}
 	//
 	// Parse the QE Report Signature and convert it to DER format
 
