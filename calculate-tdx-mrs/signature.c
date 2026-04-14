@@ -6,8 +6,6 @@
 #include <assert.h>
 #include <sys/types.h>
 
-#include <curl/curl.h>
-
 #include <openssl/evp.h>
 #include <openssl/param_build.h>
 #include <openssl/core_names.h>
@@ -18,6 +16,7 @@
 #include <openssl/bn.h>
 
 #include "common.h"
+#include "web.h"
 
 static EVP_PKEY* load_raw_ecdsa_p256_pk(const uint8_t* raw_key_64) {
     EVP_PKEY *pkey = NULL;
@@ -201,60 +200,6 @@ cleanup:
     return ret;
 }
 
-typedef struct {
-    char *data;
-    size_t size;
-} download_data_t;
-
-size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
-    size_t real_size = size * nmemb;
-    download_data_t *mem = (download_data_t*)userp;
-
-    char *ptr = realloc(mem->data, mem->size + real_size + 1);
-    if (!ptr) {
-        fprintf(stderr, "Not enough memory\n");
-        return 0; // abort transfer
-    }
-
-    mem->data = ptr;
-    memcpy(&(mem->data[mem->size]), contents, real_size);
-    mem->size += real_size;
-    mem->data[mem->size] = '\0'; // null-terminate (useful for text)
-
-    return real_size;
-}
-
-int download_to_memory(const char *url, download_data_t *out) {
-    CURL *curl;
-    CURLcode res;
-
-    out->data = malloc(1);  // will grow as needed
-    out->size = 0;
-
-    curl = curl_easy_init();
-    if (!curl) {
-        fprintf(stderr, "curl init failed\n");
-        return 1;
-    }
-
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-    res = curl_easy_perform(curl);
-
-    if (res != CURLE_OK) {
-        fprintf(stderr, "Download failed: %s\n", curl_easy_strerror(res));
-        curl_easy_cleanup(curl);
-        free(out->data);
-        return 1;
-    }
-
-    curl_easy_cleanup(curl);
-    return 0;
-}
-
 int x509_equals(X509 *a, X509 *b) {
     if (!a || !b) return 0;
 
@@ -284,32 +229,19 @@ int x509_equals(X509 *a, X509 *b) {
 
 int verify_root_ca_cert(X509* report_root_ca_cert) {
 	int ret = -1;
-	download_data_t download_cert;
 	const char* root_ca_url = "https://certificates.trustedservices.intel.com/Intel_SGX_Provisioning_Certification_RootCA.pem"; 
 
 	printf("\nFetching root ca cert from: %s\n", root_ca_url);
 
-	download_to_memory(root_ca_url, &download_cert);
-
-	BIO *bio = BIO_new_mem_buf(download_cert.data, download_cert.size);
-
-	X509 *intel_root_ca_cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
-	if (!intel_root_ca_cert) {
-		fprintf(stderr, "Unable to parse intel root ca cert:\n");
-		for(size_t i = 0; i < download_cert.size; i++) {
-			fprintf(stderr, "%02x", download_cert.data[i]);
-		}
-		fprintf(stderr, "\n");
+	X509 *intel_root_ca_cert = NULL;
+	int webret = fetch_root_ca_cert_from_intel(root_ca_url, &intel_root_ca_cert);
+	if (webret <= 0 || intel_root_ca_cert == NULL) {
+		fprintf(stderr, "Failed to fetch Intel Root CA Cert!\n");
 		goto cleanup;
 	}
-
+	
 	if (!x509_equals(report_root_ca_cert, intel_root_ca_cert)) {
 		fprintf(stderr, "Intel root ca and report root ca cert do no match!\n");
-		fprintf(stderr, "Intel root ca cert:\n");
-		for(size_t i = 0; i < download_cert.size; i++) {
-			fprintf(stderr, "%c", download_cert.data[i]);
-		}
-		fprintf(stderr, "\n");
 	} else {
 		ret = 1;
 	}
@@ -317,8 +249,6 @@ int verify_root_ca_cert(X509* report_root_ca_cert) {
 	X509_free(intel_root_ca_cert);
 
 cleanup:
-	BIO_free(bio);
-	free(download_cert.data);
 
 	return ret;
 }

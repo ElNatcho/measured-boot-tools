@@ -2,9 +2,15 @@
 
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <ctype.h>
+
+#include <cjson/cJSON.h>
 
 #include "common.h"
 #include "signature.h"
+#include "web.h"
 
 quote_t* load_quote_from_file(const char* quote_file_path) {
 
@@ -57,8 +63,41 @@ void check_quote_measurements(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_
 	compare_measurements(quote->v4->body.mrseam_measurement, mrs[INDEX_MRSEAM]);
 }
 
+static int hexstr_to_bytebuf(const char* hexstr, uint8_t* buf, size_t buf_size) {
+	for (size_t i = 0; i < buf_size && *hexstr && *(hexstr + 1); i++) {
+		char c1 = *hexstr++;
+		char c2 = *hexstr++;
+
+		if (!isxdigit(c1) || !isxdigit(c2)) {
+			return 0;
+		}
+
+		buf[i]  = (uint8_t)(isdigit(c1) ? c1 - '0' : tolower(c1) - 'a' + 10) << 4;
+		buf[i] |= (uint8_t)(isdigit(c2) ? c2 - '0' : tolower(c2) - 'a' + 10);
+	}
+
+	return 1;
+}
+
+// https://api.portal.trustedservices.intel.com/content/documentation.html#pcs-enclave-identity-v4
 static int check_quote_v4_qe_identity(quote_v4_qe_report_cert_t *report) {
-	int ret = 0;
+	int ret = 1;
+
+	const char* identity_url = "https://api.trustedservices.intel.com/tdx/certification/v4/qe/identity";
+	cJSON *root_json = NULL;
+	printf("Fetch qe identity from: %s\n", identity_url);
+	int webret = fetch_qe_identity_form_intel(identity_url, &root_json);
+	if(webret <= 0 || root_json == NULL) {
+		fprintf(stderr, "Failed to fetch qe identity from intel!\n");
+		return -1;
+	}
+
+	cJSON *qe_identity_json = cJSON_GetObjectItem(root_json, "enclaveIdentity");
+	if (qe_identity_json == NULL) {
+		fprintf(stderr, "Failed to get \"enclaveIdentity\" field from identity json.\n");
+		return -1;
+	}
+	
 	char* mrsigner_str = encode_hex(report->enclave_report_body.mrsigner, QUOTE_V4_EPB_MRSIGNER_SIZE);	
 	char* isvprodid_str = encode_hex((uint8_t*)&report->enclave_report_body.isv_prodid,
 									sizeof(report->enclave_report_body.isv_prodid));
@@ -68,21 +107,155 @@ static int check_quote_v4_qe_identity(quote_v4_qe_report_cert_t *report) {
 	char* isvsvn_str = encode_hex((uint8_t*)&report->enclave_report_body.isv_svn,
 									sizeof(report->enclave_report_body.isv_svn));
 
+	cJSON* mrsigner_json = cJSON_GetObjectItem(qe_identity_json, "mrsigner");
+	size_t mrsigner_str_len = QUOTE_V4_EPB_MRSIGNER_SIZE * 2 + 1;
+	char lower_id_mrsigner_str[mrsigner_str_len];
+	memset(lower_id_mrsigner_str, 0, mrsigner_str_len);
+	for (size_t i = 0; i < mrsigner_str_len && i < strlen(mrsigner_json->valuestring); i++) {
+		lower_id_mrsigner_str[i] = tolower(mrsigner_json->valuestring[i]);
+	}
 	printf("Checking mrsigner: %s ", mrsigner_str);
-	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+	if (cJSON_IsString(mrsigner_json) && strcmp(lower_id_mrsigner_str, mrsigner_str) == 0) {
+		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+	} else {
+		printf("!= %s (%sinvalid%s)\n", lower_id_mrsigner_str, TTY_RED, TTY_WHITE);
+		ret = 0;
+	}
 
+	cJSON* isvprodid_json = cJSON_GetObjectItem(qe_identity_json, "isvprodid");
 	printf("Checking isv-prod-id: %s ", isvprodid_str);
-	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+	if (cJSON_IsNumber(isvprodid_json) && isvprodid_json->valueint == report->enclave_report_body.isv_prodid) {
+		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+	} else {
+		printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+		ret = 0;
+	}
 
-	printf("Checking miscselect: %s ", miscselect_str);
-	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+	cJSON* miscselect_json = cJSON_GetObjectItem(qe_identity_json, "miscselect");
+	cJSON* miscselect_mask_json = cJSON_GetObjectItem(qe_identity_json, "miscselectMask");
+	if (!cJSON_IsString(miscselect_json) || !cJSON_IsString(miscselect_mask_json)) {
+		fprintf(stderr, "Failed to retrieve \"miscselect\" and/or \"miscselectMask\" field!\n");
+		ret = 0;
+	} else {
+		printf("Checking miscselect: %s ", miscselect_str);
 
-	printf("Checking attributes: %s ", attributes_str);
-	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+		uint32_t id_miscselect;
+		if (!hexstr_to_bytebuf(miscselect_json->valuestring, (uint8_t*)&id_miscselect, sizeof(id_miscselect))) {
+			fprintf(stderr, "Failed to convert \"miscselect\" to valid byte buffer!\n");	
+			ret = 0;
+			goto skip_miscselect;
+		}
+
+		uint32_t id_miscselect_mask;
+		if (!hexstr_to_bytebuf(miscselect_mask_json->valuestring, (uint8_t*)&id_miscselect_mask, sizeof(id_miscselect_mask))) {
+			fprintf(stderr, "Failed to convert \"miscselect_mask\" to valid byte buffer!\n");
+			ret = 0;
+			goto skip_miscselect;
+		}
+
+		uint32_t miscselect_masked = report->enclave_report_body.miscselect & id_miscselect_mask;
+		if (miscselect_masked == id_miscselect) {
+			printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+		} else {
+			printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+			ret = 0;
+		}
+	}
+skip_miscselect:
+
+	cJSON* attributes_json = cJSON_GetObjectItem(qe_identity_json, "attributes");
+	cJSON* attributes_mask_json = cJSON_GetObjectItem(qe_identity_json, "attributesMask");
+	if (!cJSON_IsString(attributes_json) || !cJSON_IsString(attributes_mask_json)) {
+		fprintf(stderr, "Failed to retrieve \"attributes\" and/or \"attributes_mask\" field!\n");
+		ret = 0;
+	} else {
+		printf("Checking attributes: %s ", attributes_str);
+
+		uint8_t id_attributes[QUOTE_V4_EPB_ATTRIBUTES_SIZE];
+		if (!hexstr_to_bytebuf(attributes_json->valuestring, (uint8_t*)&id_attributes, QUOTE_V4_EPB_ATTRIBUTES_SIZE)) {
+			fprintf(stderr, "Failed to convert \"attributes\" to valid byte buffer!\n");
+			ret = 0;
+			goto skip_attributes;
+		}
+
+		uint8_t id_attributes_mask[QUOTE_V4_EPB_ATTRIBUTES_SIZE];
+		if (!hexstr_to_bytebuf(attributes_mask_json->valuestring, (uint8_t*)&id_attributes_mask, QUOTE_V4_EPB_ATTRIBUTES_SIZE)) {
+			fprintf(stderr, "Failed to convert \"attributes_mask\" to valid byte buffer!\n");
+			ret = 0;
+			goto skip_attributes;
+		}
+
+		uint8_t attributes_masked[QUOTE_V4_EPB_ATTRIBUTES_SIZE];
+		memset(attributes_masked, 0, QUOTE_V4_EPB_ATTRIBUTES_SIZE);
+		for (size_t i = 0; i < QUOTE_V4_EPB_ATTRIBUTES_SIZE; i++) {
+			if ((report->enclave_report_body.attributes[i] & id_attributes_mask[i]) != id_attributes[i]) {
+				printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
+				ret = 0;
+				goto skip_attributes;
+			}
+		}
+		printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+	}
+skip_attributes:
 
 	printf("Checking isv-svn: %s ", isvsvn_str);
-	printf("(%sinvalid%s)\n", TTY_RED, TTY_WHITE);
 
+	cJSON* tcblevels_json = cJSON_GetObjectItem(qe_identity_json, "tcbLevels");
+	if (!cJSON_IsArray(tcblevels_json)) {
+		fprintf(stderr, "Failed to retrieve \"tcbLevels\" field!\n");
+		ret = 0;
+	} else {
+		// iterate over the tcbLevels array
+		uint16_t cur_isvsvn = 0;
+		cJSON* tcblevel_json = NULL;
+		cJSON* tcblevel_iter_json = tcblevels_json->child;
+		while(tcblevel_iter_json != NULL) {
+			cJSON* tcb_json = cJSON_GetObjectItem(tcblevel_iter_json, "tcb");
+			if (!cJSON_IsObject(tcb_json)) {
+				fprintf(stderr, "Failed to get \"tcb\" field: %s\n", tcblevel_iter_json->string);
+				ret = 0;
+			} else {
+				cJSON* isvsvn_json = cJSON_GetObjectItem(tcb_json, "isvsvn");
+				if (!cJSON_IsNumber(isvsvn_json)) {
+					fprintf(stderr, "Failed to get \"isvsvn\": field %s\n", tcb_json->string);
+					ret = 0;
+				} else {
+					if ((uint16_t)isvsvn_json->valueint > cur_isvsvn && (uint16_t)isvsvn_json->valueint <= report->enclave_report_body.isv_svn) {
+						tcblevel_json = tcblevel_iter_json;
+						cur_isvsvn = (uint16_t)isvsvn_json->valueint;
+					}
+				}
+			}
+
+			tcblevel_iter_json = tcblevel_iter_json->next;
+		}
+
+		if (tcblevel_json == NULL) {
+			fprintf(stderr, "Failed to find a valid tcb level!\n");
+			ret = 0;
+			goto skip_isvsvn;
+		}
+
+		cJSON* tcbstatus_json = cJSON_GetObjectItem(tcblevel_json, "tcbStatus");
+		cJSON* tcbdate_json = cJSON_GetObjectItem(tcblevel_json, "tcbDate");
+
+		if (!cJSON_IsString(tcbstatus_json) || !cJSON_IsString(tcbdate_json)) {
+			fprintf(stderr, "Failed to retrieve \"tcbStatus\" and/or \"tcbDate\" field!\n");
+			ret = 0;
+			goto skip_isvsvn;
+		}
+
+		printf("=> date:%s ", tcbdate_json->valuestring);
+		if (strcmp(tcbstatus_json->valuestring, "UpToDate") == 0) {
+			printf("(%svalid%s)\n", TTY_GREEN, TTY_WHITE);
+		} else {
+			printf("state:%s (%sinvalid%s)\n", tcbstatus_json->valuestring, TTY_RED, TTY_WHITE);
+			ret = 0;
+		}
+	}
+skip_isvsvn:
+
+	cJSON_Delete(root_json);
 	free(mrsigner_str);
 	free(isvprodid_str);
 	free(miscselect_str);

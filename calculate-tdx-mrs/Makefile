@@ -3,7 +3,7 @@ DEBUG_BUILD ?= n
 
 LOCAL_CFLAGS := -g -std=gnu99 -ftrapv
 LOCAL_CFLAGS += -Wall -Wextra -Wcast-align -Wformat -Wformat-security -Wno-deprecated-declarations
-LOCAL_CFLAGS += -lcurl
+LOCAL_CFLAGS += -lcurl -lcjson
 #LOCAL_CFLAGS += -llibcurl
 
 DEFINES :=
@@ -33,6 +33,7 @@ CSRS := \
 	rtmrms.c \
 	quote.c \
 	signature.c \
+	web.c \
 	../thirdparty/edk2/MeasureBootPeCoff.c \
 	../thirdparty/edk2/SecMain.c \
 	../thirdparty/LzmaCustomDecompressLib/LzmaDecompress.c \
