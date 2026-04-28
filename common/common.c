@@ -310,3 +310,18 @@ encode_hex(const uint8_t *bin, int length)
     }
     return hex;
 }
+
+void
+print_hex(const uint8_t *bin, int length) {
+	char* bin_hex_str = encode_hex(bin, length);
+	printf("%s", bin_hex_str);
+	free(bin_hex_str);
+}
+
+void
+print_header(const char *title) {
+	//unsigned int title_len = strlen(title);
+	//printf("\n%*c\n", title_len + 4, '#');
+	printf("\n===# %s #===\n\n", title);
+	//printf("%*c\n\n", title_len + 4, '#');
+}

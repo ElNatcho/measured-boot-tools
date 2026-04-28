@@ -99,3 +99,9 @@ contains_str(const char **list, uint32_t len, const char *value);
 
 char *
 encode_hex(const uint8_t *bin, int length);
+
+void
+print_hex(const uint8_t *bin, int length);
+
+void
+print_header(const char *title);

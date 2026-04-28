@@ -353,3 +353,92 @@ void check_quote_signature(quote_t* quote) {
 	free(signature_str);
 	free(attestation_key_str);
 }
+
+static void _print_field_dec(uint32_t indent_count, uint32_t max_label_len, const char* name, uint64_t value) {
+	printf("%*c%-*s: %ld\n", indent_count, ' ', max_label_len, name, value);
+}
+
+static void _print_field_hex(uint32_t indent_count, uint32_t max_label_len, const char* name, uint8_t* buf, int buf_len) {
+	printf("%*c%-*s: ", indent_count, ' ', max_label_len, name);
+	print_hex(buf, buf_len);
+	printf("\n");
+}
+
+static void _print_quote_header(quote_header_t *header, uint32_t indent_count) {
+	uint32_t max_label_len = strlen("Attestation Key Type");
+	_print_field_dec(indent_count, max_label_len, "Version", header->version);
+	_print_field_dec(indent_count, max_label_len, "Attestation Key Type", header->attestation_key_type);
+	_print_field_hex(indent_count, max_label_len, "TEE Type", (uint8_t*)&header->tee_type, sizeof(header->tee_type));
+	_print_field_hex(indent_count, max_label_len, "Reserved", (uint8_t*)&header->reserved, sizeof(header->reserved));
+	_print_field_hex(indent_count, max_label_len, "QE Vendor ID", header->qe_vendor_id, QUOTE_HDR_QE_VENDOR_ID_SIZE);
+	_print_field_hex(indent_count, max_label_len, "User Data", header->user_data, QUOTE_HDR_USER_DATA_SIZE);
+}
+
+static void _print_quote_body(quote_v4_body_t *body, uint32_t indent_count) {
+	uint32_t max_label_len = strlen("SEAMATTRIBUTES");
+	_print_field_hex(indent_count, max_label_len, "TEE_TCB_SVN", body->tee_tcb_svn, QUOTE_V4_TEE_TCB_SVN_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MRSEAM", body->mrseam_measurement, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MRSIGNERSEAM", body->mrsignerseam_hash, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "SEAMATTRIBUTES", (uint8_t*)&body->seamattributes, sizeof(body->seamattributes));
+	_print_field_hex(indent_count, max_label_len, "TDATTRIBUTES", (uint8_t*)&body->tdattributes, sizeof(body->tdattributes));
+	_print_field_hex(indent_count, max_label_len, "XFAM", (uint8_t*)&body->xfam, sizeof(body->xfam));
+	_print_field_hex(indent_count, max_label_len, "MRTD", body->mrtd_measurement, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MRCONFIGID", body->mrconfigid, QUOTE_V4_MRCONFIG_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MROWNER", body->mrowner, QUOTE_V4_MROWNER_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MROWNERCONFIG", body->mrownerconfig, QUOTE_V4_MROWNERCONFIG_SIZE);
+	_print_field_hex(indent_count, max_label_len, "RTMR0", body->rtmr0_measurement, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "RTMR1", body->rtmr1_measurement, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "RTMR2", body->rtmr2_measurement, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "RTMR3", body->rtmr3_measurement, SHA384_DIGEST_SIZE);
+	_print_field_hex(indent_count, max_label_len, "REPORTDATA", body->reportdata, QUOTE_V4_REPORT_DATA_SIZE);
+}
+
+static void _print_qe_report_body(quote_v4_enclave_report_body_t* qe_report, uint32_t indent_count) {
+	uint32_t max_label_len = strlen("MISCSELECT");
+	_print_field_hex(indent_count, max_label_len, "CPU SVN", qe_report->cpu_svn, QUOTE_V4_EPB_CPU_SVN_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MISCSELECT", (uint8_t*)&qe_report->miscselect, sizeof(qe_report->miscselect));
+	_print_field_hex(indent_count, max_label_len, "Reserved", qe_report->reserved0, 28);
+	_print_field_hex(indent_count, max_label_len, "Attributes", qe_report->attributes, QUOTE_V4_EPB_ATTRIBUTES_SIZE);
+	_print_field_hex(indent_count, max_label_len, "MRENCLAVE", qe_report->mrenclave, QUOTE_V4_EPB_MRENCLAVE_SIZE);
+	_print_field_hex(indent_count, max_label_len, "Reserved", qe_report->reserved1, 32);
+	_print_field_hex(indent_count, max_label_len, "MRSIGNER", qe_report->mrsigner, QUOTE_V4_EPB_MRSIGNER_SIZE);
+	_print_field_hex(indent_count, max_label_len, "Reserved", qe_report->reserved2, 96);
+	_print_field_hex(indent_count, max_label_len, "ISV ProdID", (uint8_t*)&qe_report->isv_prodid, sizeof(qe_report->isv_prodid));
+	_print_field_dec(indent_count, max_label_len, "ISV SVN", qe_report->isv_svn);
+	_print_field_hex(indent_count, max_label_len, "Reserved", qe_report->reserved3, 60);
+	_print_field_hex(indent_count, max_label_len, "Report Data", qe_report->reportdata, QUOTE_V4_EPB_REPORT_DATA_SIZE);
+}
+
+static void _print_qe_report_cert(quote_v4_qe_report_cert_t *qe_report_cert, uint32_t indent_count) {
+	uint32_t max_label_len = strlen("QE Report Signature");
+	printf("%-*cQE Report (A.3.10.):\n", indent_count, ' ');
+	_print_qe_report_body((quote_v4_enclave_report_body_t*)&qe_report_cert->enclave_report_body, indent_count + 4);
+_print_field_hex(indent_count, max_label_len, "QE Report Signature", qe_report_cert->signature, ECDSA_P256_SIG_SIZE);
+	quote_v4_qe_auth_data_t* auth_data = (quote_v4_qe_auth_data_t*)(&qe_report_cert->auth_and_cert_data);
+	printf("%-*cQE Authentication Data:\n", indent_count, ' ');
+	_print_field_dec(indent_count + 4, 4, "Size", auth_data->size);
+	_print_field_hex(indent_count + 4, 4, "Data", auth_data->data, auth_data->size);
+}
+
+static void _print_quote_signature_data(quote_v4_signature_data_t* sig_data, uint32_t indent_count) {
+	uint32_t max_label_len = strlen("ECDSA Attestation Key");
+	_print_field_hex(indent_count, max_label_len, "Quote Signature", sig_data->signature, ECDSA_P256_SIG_SIZE);
+	_print_field_hex(indent_count, max_label_len, "ECDSA Attestation Key", sig_data->ecdsa_attestation_key, ECDSA_P256_SIG_SIZE);
+	printf("%-*cQE Report Certification Data (A.3.11.):\n", indent_count, ' ');
+	_print_qe_report_cert((quote_v4_qe_report_cert_t*)(&sig_data->cert_data.data), indent_count + 4);
+}
+
+void print_quote(quote_t* quote) {
+	if (quote->version != 4) {
+		fprintf(stderr, "Quote version not supported for printing: %d\n", quote->version);
+		return;
+	}
+
+	printf("TD Quote Header (A.3.1.):\n");
+	_print_quote_header(&quote->v4->header, 4); 
+	printf("TD Quote Body (A.3.2.):\n");
+	_print_quote_body(&quote->v4->body, 4);
+	printf("Quote Signature Data Len: %d\n", quote->v4->sig_data_length);
+	printf("Quote Signature Data:\n");
+	_print_quote_signature_data(&quote->v4->sig_data, 4);
+}

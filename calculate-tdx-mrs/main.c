@@ -110,6 +110,7 @@ main(int argc, char *argv[])
 	const char *fwcfg_bootorder_path = NULL;
 	const char *fwcfg_bootmenu_path = NULL;
 	const char *quote_file_path = NULL;
+	quote_t* quote = NULL;
     uint16_t *boot_order = NULL;
     size_t len_boot_order = 0;
     char *boot_order_str;
@@ -314,6 +315,10 @@ main(int argc, char *argv[])
 			argc -= 2;
 		} else if (!strcmp(argv[0], "--quote")) {
 			quote_file_path = argv[1];
+			quote = load_quote_from_file(quote_file_path);
+			if(!quote) {
+				printf("Failed to load quote from file %s\n", quote_file_path);
+			}
 			argv += 2;
 			argc -= 2;
 		} else if (!strcmp(argv[0], "--smbios")) {
@@ -425,6 +430,11 @@ main(int argc, char *argv[])
     DEBUG("OVMF version: %s\n", ovmf_version);
     DEBUG("QEMU version: %s\n", qemu_version);
 
+	if (quote) {
+		print_header("Parsed Quote");
+		print_quote(quote);
+	}
+
     uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH];
 	memset(mrs, 0, MR_LEN * SHA384_DIGEST_LENGTH);
 
@@ -488,6 +498,7 @@ main(int argc, char *argv[])
 
     // Print event log with all extend operations if requested
     if (print_event_log) {
+		print_header("TDX Event Log");
         DEBUG("\nTDX EVENT LOG: \n");
         if (evlog.format == FORMAT_JSON) {
             printf("[");
@@ -517,6 +528,7 @@ main(int argc, char *argv[])
 
     // Print final MRS if requested
     if (print_summary) {
+		print_header("TDX MR Summary");
         DEBUG("\nTDX MR SUMMARY: \n");
         if (evlog.format == FORMAT_JSON) {
             printf("[");
@@ -547,15 +559,10 @@ main(int argc, char *argv[])
 
     ret = 0;
 
-	if (quote_file_path) {
-		quote_t *quote = load_quote_from_file(quote_file_path);
-		if(!quote) {
-			printf("Failed to create quote\n");
-			ret = -1;
-		} else {
-			check_quote_measurements(quote, mrs);
-			check_quote_signature(quote);
-		}
+	if (quote) {
+		print_header("Checking Quote Authenticity");
+		check_quote_measurements(quote, mrs);
+		check_quote_signature(quote);
 	}
 
 out:

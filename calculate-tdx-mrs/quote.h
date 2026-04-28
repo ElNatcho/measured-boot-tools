@@ -23,7 +23,7 @@ typedef struct {
 	uint16_t attestation_key_type;
 	uint32_t tee_type;
 	uint32_t reserved;
-	uint8_t qu_vendor_id[QUOTE_HDR_QE_VENDOR_ID_SIZE];
+	uint8_t qe_vendor_id[QUOTE_HDR_QE_VENDOR_ID_SIZE];
 	uint8_t user_data[QUOTE_HDR_USER_DATA_SIZE];
 } __attribute__((packed)) quote_header_t;
 
@@ -159,3 +159,4 @@ typedef struct {
 quote_t* load_quote_from_file(const char* quote_file_path);
 void check_quote_measurements(quote_t* quote, uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH]);
 void check_quote_signature(quote_t* quote);
+void print_quote(quote_t* quote);
