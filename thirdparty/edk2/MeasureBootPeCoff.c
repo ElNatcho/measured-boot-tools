@@ -1329,7 +1329,7 @@ MeasurePeImage (
       goto Finish;
     }
 	
-	printf("HashSize=0x%llx\nbuf_size=0x%llx\nCertSize=0x%x\nSumOfBytesHashed=0x%llx\n", HashSize, buf_size, CertSize, SumOfBytesHashed);
+	DEBUG("HashSize=0x%llx\nbuf_size=0x%llx\nCertSize=0x%x\nSumOfBytesHashed=0x%llx\n", HashSize, buf_size, CertSize, SumOfBytesHashed);
 
 	DEBUG("MeasurePE16(%p %lld)", HashBase, HashSize);
     for (uint32_t i = HashSize - 4096; i < HashSize; i++) {

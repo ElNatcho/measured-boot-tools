@@ -118,8 +118,8 @@ main(int argc, char *argv[])
     size_t cmdline_trailing_zeros = 1;
     bool print_event_log = false;
     bool print_summary = false;
-    uint32_t mr_nums[] = {0, 1, 2, 3};
-    size_t len_mr_nums = 4;
+    uint32_t mr_nums[] = {0, 1, 2, 3, 4, 5};
+    size_t len_mr_nums = 6;
     char *mr_str = NULL;
     const char *progname = argv[0];
     eventlog_t evlog = {

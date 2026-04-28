@@ -379,17 +379,10 @@ static int _setup_kernel_image_for_measurement(measurement_config_t *config, rtm
 
 	hdr->cmd_line_ptr = 0x020000;
 
-	printf("setup sects: %d\n", hdr->setup_sects);
-
 	// TODO: see qemu hw/i386/x86.c:x86_load_linux
 	//uint32_t setup_size = ((hdr->setup_sects > 0 ? hdr->setup_sects : 4) + 1) * 512;
 	uint32_t setup_size = 5 * 512;
 	uint32_t setup_offset = QEMU_ALIGN_UP(get_file_size(context->kernel_file_path) - setup_size, 16);
-
-	printf("%x: ", setup_offset);	
-
-	for (uint32_t i = 0; i < 32; i++) printf("%0.02x", *(*kernel_buf + setup_offset + i));
-	printf("\n");
 
 	return 0;
 }
