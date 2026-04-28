@@ -428,11 +428,9 @@ main(int argc, char *argv[])
     uint8_t mrs[MR_LEN][SHA384_DIGEST_LENGTH];
 	memset(mrs, 0, MR_LEN * SHA384_DIGEST_LENGTH);
 
-    if (contains(mr_nums, len_mr_nums, INDEX_MRSEAM)) {
-        if (calculate_mrseam(mrs[INDEX_MRSEAM], &evlog, tdx_module)) {
-            printf("Failed to calculate event log for MRSEAM\n");
-            goto out;
-        }
+    if (calculate_mrseam(mrs[INDEX_MRSEAM], &evlog, tdx_module)) {
+        printf("Failed to calculate event log for MRSEAM\n");
+        goto out;
     }
 
     if (calculate_mrtd(mrs[INDEX_MRTD], &evlog, ovmf, qemu_version)) {

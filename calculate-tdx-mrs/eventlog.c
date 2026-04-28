@@ -124,15 +124,14 @@ evlog_add(eventlog_t *evlog, uint32_t index, const char *name, uint8_t *hash, co
     } else if (evlog->format == FORMAT_TEXT) {
 		if (evlog->compare_digest_list) {
 
-			char *cmphashstr;
-			char *matchstr;
-			char *colorstr;
+			char *cmphashstr = "";
+			char *matchstr = "";
+			char *colorstr = "";
 
 			assert(evlog->compare_digest_list_count >= evlog->compare_digest_list_offset);
 
-			if (index == INDEX_MRTD || evlog->compare_digest_list_count == evlog->compare_digest_list_offset) {
+			if (!(INDEX_RTMR0 <= index && index <= INDEX_RTMR3) || evlog->compare_digest_list_count == evlog->compare_digest_list_offset) {
 				cmphashstr = "n/a";
-				matchstr = "";
 			} else {
 				cmphashstr = evlog->compare_digest_list[evlog->compare_digest_list_offset];
 
